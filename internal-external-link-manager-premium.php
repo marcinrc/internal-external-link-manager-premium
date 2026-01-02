@@ -26,6 +26,7 @@ class BeeClear_ILM {
     private $collect_external_matches = false;
     private $external_matches_log = array();
     private $last_rebuild_error = '';
+    private $premium_basename;
 
     /**
      * Cached author note HTML for admin headers.
@@ -60,8 +61,10 @@ class BeeClear_ILM {
     const NONCE               = 'beeclear_ilm_nonce';
     const VERSION             = '1.7.5';
     const TD                  = 'beeclear-ilm';
+    const FREE_PLUGIN_BASENAME = 'internal-external-link-manager/internal-external-link-manager.php';
 
     public function __construct() {
+        $this->premium_basename = plugin_basename(__FILE__);
         add_action('plugins_loaded', array($this, 'load_textdomain'));
 
         register_activation_hook(__FILE__, array($this, 'activate'));
@@ -72,7 +75,9 @@ class BeeClear_ILM {
 
         add_action('admin_menu', array($this, 'admin_menu'));
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this,'settings_link'));
+        add_filter('plugin_action_links_' . self::FREE_PLUGIN_BASENAME, array($this, 'free_version_action_links'), 20);
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('activate_plugin', array($this, 'block_free_version_activation'), 10, 2);
 
         add_action('add_meta_boxes', array($this, 'add_metabox'));
 
@@ -107,7 +112,52 @@ class BeeClear_ILM {
         load_plugin_textdomain(self::TD, false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
+    private function ensure_plugin_functions_loaded(){
+        if ( ! function_exists('is_plugin_active') ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+    }
+
+    private function is_free_plugin_active(){
+        $this->ensure_plugin_functions_loaded();
+        return is_plugin_active(self::FREE_PLUGIN_BASENAME);
+    }
+
+    private function is_premium_active(){
+        $this->ensure_plugin_functions_loaded();
+        return is_plugin_active($this->premium_basename);
+    }
+
+    private function deactivate_free_version_if_active(){
+        if ( $this->is_free_plugin_active() ) {
+            deactivate_plugins(self::FREE_PLUGIN_BASENAME, true);
+        }
+    }
+
+    public function block_free_version_activation($plugin, $network_wide){
+        if ( $plugin !== self::FREE_PLUGIN_BASENAME || ! $this->is_premium_active() ) return;
+
+        deactivate_plugins(self::FREE_PLUGIN_BASENAME, true, $network_wide);
+        wp_die(
+            esc_html__('Premium version is acticated', self::TD),
+            esc_html__('Plugin activation blocked', self::TD),
+            array('back_link' => true)
+        );
+    }
+
+    public function free_version_action_links($actions){
+        if ( ! $this->is_premium_active() ) return $actions;
+
+        if ( isset($actions['activate']) ) {
+            unset($actions['activate']);
+        }
+
+        $actions[] = '<span class="ilmp-premium-note">' . esc_html__('Premium version is acticated', self::TD) . '</span>';
+        return $actions;
+    }
+
     public function activate(){
+        $this->deactivate_free_version_if_active();
         $defaults = array(
             'rel'                   => 'nofollow',
             'title_mode'            => 'phrase',
