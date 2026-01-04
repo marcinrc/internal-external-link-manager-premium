@@ -488,6 +488,18 @@ class BeeClear_ILM {
         return $grouped;
     }
 
+    private function sum_source_counts($sources){
+        $total = 0;
+        foreach ((array) $sources as $info){
+            if (is_array($info)){
+                $total += (int) ($info['count'] ?? 0);
+            } else {
+                $total += (int) $info;
+            }
+        }
+        return $total;
+    }
+
     private function format_context_html_for_popup($html, $tag){
         if ($tag === 'li'){
             return '<ul class="beeclear-ilm-context-list-preview">'.$html.'</ul>';
@@ -2254,35 +2266,49 @@ JS;
                 }
 
                 // Zapisz mapę: per TARGET przechowuj sumę i źródła z frazami (matched text)
-                if($total_count > 0 && !empty($post->ID) && !empty($linked_counts_internal)){
+                if (!empty($post->ID)){
                     $map = get_option(self::OPT_LINKMAP, array());
                     $current_id = (int)$post->ID;
-                    foreach($linked_counts_internal as $t=>$c){
-                        $map[$t] = $map[$t] ?? array('count'=>0,'sources'=>array());
-                        $map[$t]['count'] += $c;
+                    $map_changed = false;
 
-                        // Back-compat: wcześniej mógł być int lub array
-                        $existing = $map[$t]['sources'][$current_id] ?? 0;
-                        $existing_count   = is_array($existing) ? (int)($existing['count'] ?? 0) : (int)$existing;
-                        $existing_phrases = is_array($existing) ? (array)($existing['phrases'] ?? array()) : array();
-                        $existing_contexts = is_array($existing) ? (array)($existing['contexts'] ?? array()) : array();
-
-                        // scal konkretne dopasowania
-                        $match_for_target = isset($linked_phrases_internal[$t]) ? (array)$linked_phrases_internal[$t] : array();
-                        foreach($match_for_target as $ph=>$pc){
-                            $existing_phrases[$ph] = ($existing_phrases[$ph] ?? 0) + (int)$pc;
+                    // Usuń poprzednie wpisy dla tego źródła, by nie dublować po kolejnych renderach lub po usunięciu linków
+                    foreach ($map as $target_id => $entry){
+                        if (!isset($entry['sources'][$current_id])) continue;
+                        unset($map[$target_id]['sources'][$current_id]);
+                        $map[$target_id]['count'] = $this->sum_source_counts($map[$target_id]['sources']);
+                        if ($map[$target_id]['count'] <= 0 || empty($map[$target_id]['sources'])){
+                            unset($map[$target_id]);
                         }
-
-                        $context_for_target = isset($linked_contexts_internal[$t]) ? (array)$linked_contexts_internal[$t] : array();
-                        $merged_contexts = $this->merge_contexts($existing_contexts, $context_for_target);
-
-                        $map[$t]['sources'][$current_id] = array(
-                            'count'   => $existing_count + (int)$c,
-                            'phrases' => $existing_phrases, // klucze = KONKRETNE frazy z treści
-                            'contexts'=> $merged_contexts,
-                        );
+                        $map_changed = true;
                     }
-                    update_option(self::OPT_LINKMAP, $map, false);
+
+                    if (!empty($linked_counts_internal)){
+                        foreach($linked_counts_internal as $t=>$c){
+                            $map[$t] = $map[$t] ?? array('count'=>0,'sources'=>array());
+
+                            // scal konkretne dopasowania
+                            $match_for_target = isset($linked_phrases_internal[$t]) ? (array)$linked_phrases_internal[$t] : array();
+                            $existing_phrases = array();
+                            foreach($match_for_target as $ph=>$pc){
+                                $existing_phrases[$ph] = (int) $pc;
+                            }
+
+                            $context_for_target = isset($linked_contexts_internal[$t]) ? (array)$linked_contexts_internal[$t] : array();
+                            $merged_contexts = $this->merge_contexts(array(), $context_for_target);
+
+                            $map[$t]['sources'][$current_id] = array(
+                                'count'   => (int) $c,
+                                'phrases' => $existing_phrases, // klucze = KONKRETNE frazy z treści
+                                'contexts'=> $merged_contexts,
+                            );
+                            $map[$t]['count'] = $this->sum_source_counts($map[$t]['sources']);
+                            $map_changed = true;
+                        }
+                    }
+
+                    if ($map_changed){
+                        update_option(self::OPT_LINKMAP, $map, false);
+                    }
                 }
 
                 if ($this->collect_external_matches && !empty($linked_counts_external)){
