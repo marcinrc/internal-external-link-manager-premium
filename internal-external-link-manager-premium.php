@@ -6,6 +6,9 @@
  * Author: BeeClear
  * Author URI: https://beeclear.pl
  * Text Domain: internal-external-link-manager-premium
+ * Domain Path: /languages
+ * License: GPLv2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 5.8
  * Requires PHP: 7.4
  */
@@ -59,7 +62,7 @@ class BeeClear_ILM {
     const META_TARGET_PRIORITY= '_beeclear_ilm_target_priority';// per-post priority: higher = first to link
     const NONCE               = 'beeclear_ilm_nonce';
     const VERSION             = '1.7.5';
-    const TD                  = 'beeclear-ilm';
+    const TD                  = 'internal-external-link-manager-premium';
 
     public function __construct() {
         add_action('plugins_loaded', array($this, 'load_textdomain'));
@@ -253,7 +256,7 @@ class BeeClear_ILM {
 
     public function admin_menu(){
         $cap = 'manage_options';
-        $title = 'Internal & External Link Manager';
+        $title = __('Internal & External Link Manager', self::TD);
         add_menu_page($title,$title,$cap,'beeclear-ilm',array($this,'render_dashboard'),'dashicons-admin-links',59);
         add_submenu_page('beeclear-ilm', __('Global settings', self::TD), __('Global settings', self::TD), $cap, 'beeclear-ilm', array($this,'render_dashboard'));
         add_submenu_page('beeclear-ilm', __('External linking', self::TD), __('External linking', self::TD), $cap, 'beeclear-ilm-external', array($this,'render_external'));
