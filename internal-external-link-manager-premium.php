@@ -44,6 +44,16 @@ class BeeClear_ILM {
      */
     private $token_tips_html = null;
 
+    /**
+     * Basename of the free plugin to coordinate activation rules.
+     */
+    const BASE_PLUGIN = 'internal-external-link-manager/internal-external-link-manager.php';
+
+    /**
+     * Transient name used to queue admin notices across redirects.
+     */
+    const NOTICE_TRANSIENT = 'beeclear_ilm_premium_notices';
+
     // === Options / keys ===
     const OPT_SETTINGS        = 'beeclear_ilm_settings';
     const OPT_INDEX           = 'beeclear_ilm_index';          // compiled internal rules index
@@ -101,6 +111,10 @@ class BeeClear_ILM {
         add_action('wp_footer', array($this, 'render_timing_log_script'));
 
         add_action('admin_init', array($this,'register_admin_columns'));
+
+        add_action('admin_init', array($this, 'maybe_block_free_plugin_activation'));
+        add_filter('plugin_action_links_' . self::BASE_PLUGIN, array($this, 'maybe_replace_free_plugin_actions'));
+        add_action('admin_notices', array($this, 'render_premium_admin_notices'));
     }
 
     public function activate(){
@@ -137,6 +151,8 @@ class BeeClear_ILM {
         add_option(self::OPT_ACTIVITY_LOG, array(), '', false);
         add_option(self::OPT_DBVER, self::VERSION, '', false);
         $this->rebuild_index();
+
+        $this->disable_free_version_if_active();
     }
 
     public function deactivate(){
@@ -2343,6 +2359,81 @@ JS;
                 $this->autolink_timing_ms += (microtime(true) - $start) * 1000;
             }
         }
+    }
+
+    private function disable_free_version_if_active(){
+        if ( ! function_exists('is_plugin_active') ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        if ( is_plugin_active(self::BASE_PLUGIN) ) {
+            deactivate_plugins(array(self::BASE_PLUGIN));
+            $this->enqueue_premium_notice(__('Internal & External Link Manager has been deactivated because the premium version is active.', 'internal-external-link-manager-premium'), 'warning');
+        }
+    }
+
+    public function maybe_block_free_plugin_activation(){
+        if ( ! is_admin() ) return;
+        if ( ! current_user_can('activate_plugins') ) return;
+
+        $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
+        $plugin = isset($_GET['plugin']) ? sanitize_text_field(wp_unslash($_GET['plugin'])) : '';
+
+        if ( 'activate' === $action && self::BASE_PLUGIN === $plugin && $this->is_premium_active() ) {
+            $this->enqueue_premium_notice(__('You cannot activate the free Internal & External Link Manager while the premium version is active.', 'internal-external-link-manager-premium'));
+            wp_safe_redirect(admin_url('plugins.php'));
+            exit;
+        }
+    }
+
+    public function render_premium_admin_notices(){
+        $notices = get_transient(self::NOTICE_TRANSIENT);
+        if ( ! is_array($notices) ) {
+            return;
+        }
+
+        delete_transient(self::NOTICE_TRANSIENT);
+
+        foreach ($notices as $notice){
+            $class = empty($notice['class']) ? 'notice notice-error' : 'notice notice-' . sanitize_html_class($notice['class']);
+            $message = isset($notice['message']) ? $notice['message'] : '';
+            if ( empty($message) ) continue;
+
+            echo '<div class="' . esc_attr($class) . '"><p>' . esc_html($message) . '</p></div>';
+        }
+    }
+
+    public function maybe_replace_free_plugin_actions($actions){
+        if ( ! $this->is_premium_active() ) return $actions;
+
+        $message = esc_html__('Premium version is activated', 'internal-external-link-manager-premium');
+
+        unset($actions['activate']);
+        array_unshift($actions, '<span class="beeclear-ilm-premium-active">' . $message . '</span>');
+
+        return $actions;
+    }
+
+    private function enqueue_premium_notice($message, $class = 'error'){
+        $notices = get_transient(self::NOTICE_TRANSIENT);
+        if ( ! is_array($notices) ) {
+            $notices = array();
+        }
+
+        $notices[] = array(
+            'class'   => $class,
+            'message' => $message,
+        );
+
+        set_transient(self::NOTICE_TRANSIENT, $notices, 60);
+    }
+
+    private function is_premium_active(){
+        if ( ! function_exists('is_plugin_active') ) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        return is_plugin_active(plugin_basename(__FILE__));
     }
 
     // CROSS-INLINE helper
