@@ -1,33 +1,35 @@
-=== Internal External Link Manager Premium ===
-Contributors: yourname
-Donate link: https://example.com/
-Tags: internal links, external links, seo, link manager, wordpress
+=== Internal & External Link Manager - Premium (BeeClear) ===
+Contributors: beeclear
+Donate link: https://beeclear.pl/
+Tags: internal links, external links, seo, autolink, wordpress
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Manage internal and external links in WordPress with advanced control and SEO-friendly options.
+Turn keywords into smart, automatic links—drive traffic to key posts/pages and trusted external URLs with fine-grained control and SEO-friendly settings.
 
 == Description ==
 
-Internal External Link Manager Premium allows you to easily manage, monitor, and optimize internal and external links across your WordPress website.
+Internal & External Link Manager (BeeClear) is a premium WordPress plugin that automatically links defined phrases or patterns within your website, improving internal linking structure and SEO efficiency. It supports both internal and external linking with advanced configuration options.
 
-Key features include:
-* Centralized internal and external link management
-* SEO-friendly link attributes
-* Automatic and manual link handling
-* Clean integration with WordPress admin
-
-This plugin is designed for site owners who want better control over their link structure without editing content manually.
+= Key Features =
+* Rule-based internal and external linking with regex and case-sensitivity support.
+* rel, title, aria-label, and class attributes for complete SEO and accessibility control.
+* Per-page link limits, custom priorities, and post-type targeting.
+* Automatic index rebuilding on post updates plus one-click manual rebuild with summary.
+* Import/export tools for moving rules between environments.
+* Clean WordPress admin interface with sortable rule tables.
+* Works with Gutenberg and the classic editor using native WordPress APIs.
 
 == Installation ==
 
 1. Upload the plugin folder to the `/wp-content/plugins/` directory, or install the plugin through the WordPress Plugins screen directly.
-2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. Configure the plugin via the settings page.
+2. Activate **Internal & External Link Manager - Premium (BeeClear)** through the 'Plugins' screen in WordPress.
+3. Configure settings under **Internal & External Link Manager (BeeClear)** in the admin panel.
+4. Add or import internal and external link rules as needed.
 
 == Frequently Asked Questions ==
 
@@ -35,19 +37,30 @@ This plugin is designed for site owners who want better control over their link 
 Yes. The plugin is tested up to WordPress 6.9.
 
 = Does it modify existing content? =
-No, links are managed dynamically without permanently changing post content.
+No. Links are managed dynamically without permanently changing post content.
+
+= Does it support regex rules? =
+Yes. You can create regex-based rules with case-sensitivity options for precise matching.
+
+= Can I limit the number of links per page? =
+Yes. You can set per-page link caps and custom priorities for competing targets.
 
 == Screenshots ==
 
-1. Plugin settings page.
-2. Internal and external link overview.
+1. Plugin settings page with rule overview.
+2. Internal and external link management tables.
+3. Rule editor showing regex and attribute options.
+4. Rebuild index screen with summary results.
 
 == Changelog ==
 
-= 1.0.0 =
-* Initial release.
+= 1.7.5 =
+* Improved admin interface with sortable rule tables.
+* Optimized rebuild process and link mapping performance.
+* Enhanced regex processing and matching accuracy.
+* Fixed minor bugs and stability issues.
 
 == Upgrade Notice ==
 
-= 1.0.0 =
-Initial release.
+= 1.7.5 =
+Recommended upgrade for improved admin experience, faster rebuilds, and better regex handling.
