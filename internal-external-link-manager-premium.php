@@ -115,6 +115,7 @@ class BeeClear_ILM {
             'max_total_per_page'    => 0,
             'process_post_types'    => array('post','page'),
             'min_content_length'    => 200,
+            'min_element_length'    => 20,
             'link_template'         => '<a href="{url}"{rel}{title}{aria}{class}>{text}</a>',
             'clean_on_uninstall'    => false,
             'clean_on_deactivation' => false,
@@ -278,6 +279,7 @@ class BeeClear_ILM {
         $out['max_total_per_page']    = max(0, intval($in['max_total_per_page'] ?? 0));
         $out['process_post_types']    = array_values(array_filter(array_map('sanitize_key', (array)($in['process_post_types'] ?? array('post','page')))));
         $out['min_content_length']    = max(0, intval($in['min_content_length'] ?? 200));
+        $out['min_element_length']    = max(0, intval($in['min_element_length'] ?? 20));
         $tpl                          = isset($in['link_template']) ? (string)$in['link_template'] : '<a href="{url}"{rel}{title}{aria}{class}>{text}</a>';
         $out['link_template']         = (strpos($tpl, '{url}') !== false && strpos($tpl, '{text}') !== false) ? $tpl : '<a href="{url}"{rel}{title}{aria}{class}>{text}</a>';
         $out['clean_on_uninstall']    = !empty($in['clean_on_uninstall']);
@@ -1888,6 +1890,7 @@ JS;
                 $start = microtime(true);
             }
             $minlen = isset($settings['min_content_length']) ? (int)$settings['min_content_length'] : 200;
+            $min_element_length = isset($settings['min_element_length']) ? (int)$settings['min_element_length'] : 20;
 
             $plain = wp_strip_all_tags($content);
             if ( function_exists('mb_strlen') ) { if ( mb_strlen($plain, 'UTF-8') < $minlen ) return $content; }
@@ -2055,6 +2058,12 @@ JS;
                     $txt = $node->nodeValue;
                     if ($txt === '') continue;
                     $element_text = null;
+
+                    if ($min_element_length > 0){
+                        $element_text = $this->get_text_for_node_element($node);
+                        $element_len = function_exists('mb_strlen') ? mb_strlen($element_text, 'UTF-8') : strlen($element_text);
+                        if ($element_len < $min_element_length) continue;
+                    }
 
                     // INTERNAL
                     if ( ! $skip_internal_here ){
@@ -2670,7 +2679,7 @@ JS;
         $s = wp_parse_args($settings, array(
             'rel'=>'nofollow','title_mode'=>'phrase','title_custom'=>'','aria_mode'=>'phrase','aria_custom'=>'',
             'default_class'=>'beeclear-ilm-link','max_per_target'=>1,'max_total_per_page'=>0,
-            'process_post_types'=>array('post','page'),'min_content_length'=>200,
+            'process_post_types'=>array('post','page'),'min_content_length'=>200,'min_element_length'=>20,
             'link_template'=>'<a href="{url}"{rel}{title}{aria}{class}>{text}</a>',
             'clean_on_uninstall'=>false,'clean_on_deactivation'=>false,'process_on_archives'=>false,
             'skip_elements_internal'=>'','skip_elements_external'=>'','cross_inline'=>false,
@@ -2743,6 +2752,7 @@ JS;
         echo '</td></tr>';
         echo '<tr><th>'.esc_html__('Process INTERNAL links on archives (lists)', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="\' . esc_attr( self::OPT_SETTINGS ) . \'[process_on_archives]" value="1" '.checked($s['process_on_archives'], true, false).'> '.esc_html__('Enable (may add load).', 'internal-external-link-manager-premium').'</label></td></tr>';
         echo '<tr><th>'.esc_html__('Minimum content length to process', 'internal-external-link-manager-premium').'</th><td><input type="number" min="0" name="\' . esc_attr( self::OPT_SETTINGS ) . \'[min_content_length]" value="'.esc_attr($s['min_content_length']).'"></td></tr>';
+        echo '<tr><th>'.esc_html__('Minimum element length to process', 'internal-external-link-manager-premium').'</th><td><input type="number" min="0" name="\' . esc_attr( self::OPT_SETTINGS ) . \'[min_element_length]" value="'.esc_attr($s['min_element_length']).'"><span class="inline-help">'.esc_html__('Skip paragraphs, headings, or list items shorter than this when autolinking.', 'internal-external-link-manager-premium').'</span></td></tr>';
         echo '</table>';
         echo '</div>';
 
