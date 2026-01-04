@@ -3676,7 +3676,8 @@ JS;
         if ( ! current_user_can('manage_options') ) return;
 
         if( isset($_POST['beeclear_ilm_save_external']) && check_admin_referer(self::NONCE, self::NONCE) ){
-            $clean = $this->sanitize_external_rules( isset($_POST['beeclear_ilm_ext']) ? array_map('wp_unslash', (array) $_POST['beeclear_ilm_ext']) : array() );
+            $raw_ext = isset($_POST['beeclear_ilm_ext']) ? wp_unslash($_POST['beeclear_ilm_ext']) : array();
+            $clean = $this->sanitize_external_rules( is_array($raw_ext) ? $raw_ext : array() );
             update_option(self::OPT_EXT_RULES, $clean, false);
             echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', 'internal-external-link-manager-premium').'</p></div>';
 
@@ -3780,14 +3781,14 @@ JS;
             echo '<td class="cell-types">'.
                 '<div class="types-stack">'.
                     '<div class="max-per-page-field"><label class="max-label" for="'.esc_attr($max_id).'">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="'.esc_attr($max_id).'" name="beeclear_ilm_ext[' . intval($i_attr) . '][max_per_page]" value="'.esc_attr((int)$max_per_page).'"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'.
-                    '<div class="types-checklist">'.wp_kses_post($this->post_types_checklist_html('beeclear_ilm_ext['.$i_attr.'][types][]', $types, $pts)).'</div>'.
+                    '<div class="types-checklist">'.wp_kses_post($this->post_types_checklist_html('beeclear_ilm_ext['.intval($i_attr).'][types][]', $types, $pts)).'</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i_attr.'-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="beeclear-ilm-ext-'.$i_attr.'-exclude" name="beeclear_ilm_ext[' . intval($i_attr) . '][exclude_ids]" class="regular-text" value="'.esc_attr($exclude_ids).'" placeholder="e.g. 123, 456">'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.intval($i_attr).'-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="beeclear-ilm-ext-'.intval($i_attr).'-exclude" name="beeclear_ilm_ext[' . intval($i_attr) . '][exclude_ids]" class="regular-text" value="'.esc_attr($exclude_ids).'" placeholder="e.g. 123, 456">'.
                     '</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i_attr.'-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="beeclear-ilm-ext-'.$i_attr.'-allowed" name="beeclear_ilm_ext[' . intval($i_attr) . '][allowed_tags]" class="regular-text" value="'.esc_attr($allowed_tags_raw).'" placeholder="p, ul, ol">'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.intval($i_attr).'-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="beeclear-ilm-ext-'.intval($i_attr).'-allowed" name="beeclear_ilm_ext[' . intval($i_attr) . '][allowed_tags]" class="regular-text" value="'.esc_attr($allowed_tags_raw).'" placeholder="p, ul, ol">'.
                         '<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', 'internal-external-link-manager-premium').'</p>'.
                     '</div>'.
                 '</div>'.
@@ -3818,7 +3819,7 @@ JS;
         echo '<script type="text/html" id="beeclear-ilm-ext-types-template">'
             .'<div class="types-stack">'
                 .'<div class="max-per-page-field"><label class="max-label" for="beeclear-ilm-ext-__IDX__-max">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="beeclear-ilm-ext-__IDX__-max" name="beeclear_ilm_ext[__IDX__][max_per_page]" value="1"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'
-                .'<div class="types-checklist">'.$this->post_types_checklist_html('beeclear_ilm_ext[__IDX__][types][]', array(), $pts, true).'</div>'
+                .'<div class="types-checklist">'.wp_kses_post($this->post_types_checklist_html('beeclear_ilm_ext[__IDX__][types][]', array(), $pts, true)).'</div>'
                 .'<div class="field-stack">'
                     .'<label class="field-label" for="beeclear-ilm-ext-__IDX__-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'
                     .'<input type="text" id="beeclear-ilm-ext-__IDX__-exclude" name="beeclear_ilm_ext[__IDX__][exclude_ids]" class="regular-text" placeholder="123, 456">'
@@ -3837,10 +3838,10 @@ JS;
             echo '<ol class="ilm-list">';
             foreach($rules as $r){
                 $badge = !empty($r['regex']) ? 'regex' : (!empty($r['case']) ? 'case' : ($this->contains_tokens($r['phrase'] ?? '') ? 'tokens' : ''));
-                $types = empty($r['types']) ? esc_html__('all types', 'internal-external-link-manager-premium') : implode(', ', array_map('esc_html', (array)$r['types']));
+                $types_raw = empty($r['types']) ? __('all types', 'internal-external-link-manager-premium') : implode(', ', (array) $r['types']);
                 $ph = isset($r['phrase']) ? $r['phrase'] : '';
                 $url = isset($r['url']) ? $r['url'] : '';
-                echo '<li><code>'.esc_html($ph).'</code> '.($badge? '['.esc_html($badge).'] ' : '').'→ <a href="'.esc_url($url).'" target="_blank" rel="noopener">'.esc_html($url).'</a> <span style="opacity:.7">('.$types.')</span></li>';
+                echo '<li><code>'.esc_html($ph).'</code> '.($badge? '['.esc_html($badge).'] ' : '').'→ <a href="'.esc_url($url).'" target="_blank" rel="noopener">'.esc_html($url).'</a> <span style="opacity:.7">('.esc_html($types_raw).')</span></li>';
             }
             echo '</ol>';
             echo '</div>';
