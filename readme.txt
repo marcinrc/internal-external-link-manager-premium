@@ -9,7 +9,7 @@ Stable tag: 1.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Turn keywords into smart, automatic links—drive traffic to key posts/pages and trusted external URLs with fine-grained control and SEO-friendly settings.
+Turn keywords into smart, automatic links—drive traffic to key pages and trusted external URLs with fine-grained control and SEO-friendly settings.
 
 == Description ==
 
