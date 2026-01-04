@@ -62,11 +62,8 @@ class BeeClear_ILM {
     const META_TARGET_PRIORITY= '_beeclear_ilm_target_priority';// per-post priority: higher = first to link
     const NONCE               = 'beeclear_ilm_nonce';
     const VERSION             = '1.7.5';
-    const TD                  = 'internal-external-link-manager-premium';
 
     public function __construct() {
-        add_action('plugins_loaded', array($this, 'load_textdomain'));
-
         register_activation_hook(__FILE__, array($this, 'activate'));
         register_deactivation_hook(__FILE__, array($this, 'deactivate'));
         register_uninstall_hook(__FILE__, array('BeeClear_ILM','uninstall'));
@@ -104,10 +101,6 @@ class BeeClear_ILM {
         add_action('wp_footer', array($this, 'render_timing_log_script'));
 
         add_action('admin_init', array($this,'register_admin_columns'));
-    }
-
-    public function load_textdomain(){
-        load_plugin_textdomain(self::TD, false, dirname(plugin_basename(__FILE__)) . '/languages');
     }
 
     public function activate(){
@@ -220,7 +213,6 @@ class BeeClear_ILM {
                         'no_found_rows'    => true,
                         'orderby'          => 'ID',
                         'order'            => 'ASC',
-                        'suppress_filters' => true,
                     ));
                     if ( is_wp_error($q) ) break;
                     $ids = (array) $q->posts;
@@ -238,7 +230,9 @@ class BeeClear_ILM {
                     $offset += $batch;
                 } while ( !empty($ids) && count($ids) === $batch );
             } catch (\Throwable $e) {
-                error_log('[BeeClear ILM] Migration 1.4.0 failed: '.$e->getMessage());
+                if ( defined('WP_DEBUG') && WP_DEBUG ) {
+                    error_log('[BeeClear ILM] Migration 1.4.0 failed: ' . $e->getMessage());
+                }
                 update_option(self::OPT_DBVER, '1.4.0-failed', false);
                 return;
             }
@@ -250,18 +244,18 @@ class BeeClear_ILM {
 
     public function settings_link($links){
         $url = admin_url('admin.php?page=beeclear-ilm');
-        $links[] = '<a href="'.esc_url($url).'">'.esc_html__('Settings', self::TD).'</a>';
+        $links[] = '<a href="'.esc_url($url).'">'.esc_html__('Settings', 'internal-external-link-manager-premium').'</a>';
         return $links;
     }
 
     public function admin_menu(){
         $cap = 'manage_options';
-        $title = __('Internal & External Link Manager', self::TD);
+        $title = __('Internal & External Link Manager', 'internal-external-link-manager-premium');
         add_menu_page($title,$title,$cap,'beeclear-ilm',array($this,'render_dashboard'),'dashicons-admin-links',59);
-        add_submenu_page('beeclear-ilm', __('Global settings', self::TD), __('Global settings', self::TD), $cap, 'beeclear-ilm', array($this,'render_dashboard'));
-        add_submenu_page('beeclear-ilm', __('External linking', self::TD), __('External linking', self::TD), $cap, 'beeclear-ilm-external', array($this,'render_external'));
-        add_submenu_page('beeclear-ilm', __('Linking Overview', self::TD), __('Linking Overview', self::TD), $cap, 'beeclear-ilm-internal-overview', array($this,'render_internal_overview'));
-        add_submenu_page('beeclear-ilm', __('Import/Export', self::TD), __('Import/Export', self::TD), $cap, 'beeclear-ilm-impex', array($this,'render_impex'));
+        add_submenu_page('beeclear-ilm', __('Global settings', 'internal-external-link-manager-premium'), __('Global settings', 'internal-external-link-manager-premium'), $cap, 'beeclear-ilm', array($this,'render_dashboard'));
+        add_submenu_page('beeclear-ilm', __('External linking', 'internal-external-link-manager-premium'), __('External linking', 'internal-external-link-manager-premium'), $cap, 'beeclear-ilm-external', array($this,'render_external'));
+        add_submenu_page('beeclear-ilm', __('Linking Overview', 'internal-external-link-manager-premium'), __('Linking Overview', 'internal-external-link-manager-premium'), $cap, 'beeclear-ilm-internal-overview', array($this,'render_internal_overview'));
+        add_submenu_page('beeclear-ilm', __('Import/Export', 'internal-external-link-manager-premium'), __('Import/Export', 'internal-external-link-manager-premium'), $cap, 'beeclear-ilm-impex', array($this,'render_impex'));
     }
 
     public function register_settings(){
@@ -665,8 +659,9 @@ class BeeClear_ILM {
             delete_option(self::OPT_OVERVIEW_SCAN);
             $summary = $this->build_scan_summary($total, isset($state['started_at']) ? (int)$state['started_at'] : 0);
             $this->store_scan_summary($summary);
+            /* translators: 1: scanned pages count, 2: internal links count, 3: external links count. */
             $this->log_activity(sprintf(
-                __('Scan finished: %1$d pages, %2$d internal links, %3$d external links.', self::TD),
+                __('Scan finished: %1$d pages, %2$d internal links, %3$d external links.', 'internal-external-link-manager-premium'),
                 (int) $summary['scanned'],
                 (int) $summary['internal_links'],
                 (int) $summary['external_links']
@@ -792,26 +787,26 @@ class BeeClear_ILM {
         }
 
         $L = array(
-            'phrase_or_regex' => __('Phrase or regex', self::TD),
-            'regex'           => __('Regex', self::TD),
-            'case_sensitive'  => __('Case-sensitive', self::TD),
-            'remove'          => __('Remove', self::TD),
-            'erase'           => __('Erase', self::TD),
-            'title'           => __('Title', self::TD),
-            'aria_label'      => __('Aria-label', self::TD),
-            'custom_title'    => __('Custom title', self::TD),
-            'custom_aria'     => __('Custom aria-label', self::TD),
-            'max_page'        => __('Max/page', self::TD),
-            'zero_unlimited'  => __('0 = unlimited', self::TD),
-            'context_words'   => __('Context words', self::TD),
-            'context_tokens'  => __('Supports token syntax (non-regex). Separate multiple entries with commas.', self::TD),
-            'context_placeholder' => __('Additional words required in the same element', self::TD),
-            'scan_failed'     => __('Scan failed.', self::TD),
-            'scan_done'       => __('Scan finished. Overview updated.', self::TD),
-            'scan_prepare'    => __('Preparing scan…', self::TD),
-            'scan_unable'     => __('Unable to start scan.', self::TD),
-            'scan_empty'      => __('Nothing to scan.', self::TD),
-            'scan_running'    => __('Overview scan in progress…', self::TD),
+            'phrase_or_regex' => __('Phrase or regex', 'internal-external-link-manager-premium'),
+            'regex'           => __('Regex', 'internal-external-link-manager-premium'),
+            'case_sensitive'  => __('Case-sensitive', 'internal-external-link-manager-premium'),
+            'remove'          => __('Remove', 'internal-external-link-manager-premium'),
+            'erase'           => __('Erase', 'internal-external-link-manager-premium'),
+            'title'           => __('Title', 'internal-external-link-manager-premium'),
+            'aria_label'      => __('Aria-label', 'internal-external-link-manager-premium'),
+            'custom_title'    => __('Custom title', 'internal-external-link-manager-premium'),
+            'custom_aria'     => __('Custom aria-label', 'internal-external-link-manager-premium'),
+            'max_page'        => __('Max/page', 'internal-external-link-manager-premium'),
+            'zero_unlimited'  => __('0 = unlimited', 'internal-external-link-manager-premium'),
+            'context_words'   => __('Context words', 'internal-external-link-manager-premium'),
+            'context_tokens'  => __('Supports token syntax (non-regex). Separate multiple entries with commas.', 'internal-external-link-manager-premium'),
+            'context_placeholder' => __('Additional words required in the same element', 'internal-external-link-manager-premium'),
+            'scan_failed'     => __('Scan failed.', 'internal-external-link-manager-premium'),
+            'scan_done'       => __('Scan finished. Overview updated.', 'internal-external-link-manager-premium'),
+            'scan_prepare'    => __('Preparing scan…', 'internal-external-link-manager-premium'),
+            'scan_unable'     => __('Unable to start scan.', 'internal-external-link-manager-premium'),
+            'scan_empty'      => __('Nothing to scan.', 'internal-external-link-manager-premium'),
+            'scan_running'    => __('Overview scan in progress…', 'internal-external-link-manager-premium'),
         );
         wp_add_inline_script('jquery', 'window.BeeClearILM = window.BeeClearILM || {}; BeeClearILM.i18n = '.wp_json_encode($L).'; BeeClearILM.nonce = "'.wp_create_nonce(self::NONCE).'"; BeeClearILM.settingsUrl = "'.esc_url(admin_url('admin.php?page=beeclear-ilm')).'";', 'before');
 
@@ -1403,7 +1398,7 @@ JS;
         if ($this->author_note === null){
             $this->author_note = '<p class="beeclear-author-note">'
                 .'<span class="dashicons dashicons-admin-users" aria-hidden="true"></span>'
-                .'<span>'.esc_html__('Author:', self::TD).' <a href="https://beeclear.pl" target="_blank" rel="noopener">BeeClear</a></span>'
+                .'<span>'.esc_html__('Author:', 'internal-external-link-manager-premium').' <a href="https://beeclear.pl" target="_blank" rel="noopener">BeeClear</a></span>'
                 .'</p>';
         }
         return $this->author_note;
@@ -1411,12 +1406,12 @@ JS;
 
     private function render_token_tips_html(){
         if ($this->token_tips_html === null){
-            $this->token_tips_html  = '<details class="ilm-tips"><summary>'.esc_html__('Tips: Token syntax (non-regex mode)', self::TD).'</summary>';
+            $this->token_tips_html  = '<details class="ilm-tips"><summary>'.esc_html__('Tips: Token syntax (non-regex mode)', 'internal-external-link-manager-premium').'</summary>';
             $this->token_tips_html .= '<div class="description">';
             $this->token_tips_html .= '<ul style="list-style:disc; padding-left:18px">';
-            $this->token_tips_html .= '<li><code>wordpre[string]</code>, <code>[string:5]</code>, <code>[string:max5]</code>, <code>[string:min3]</code> — '.esc_html__('letters appended to prefix (letters only, no hyphen/space).', self::TD).'</li>';
-            $this->token_tips_html .= '<li><code>wordpress [words] plugin</code>, <code>[words:1]</code>, <code>[words:max2]</code>, <code>[words:min2]</code> — '.esc_html__('word(s) between parts, default 1–3.', self::TD).'</li>';
-            $this->token_tips_html .= '<li>'.esc_html__('Tokens work only when "Regex" is OFF. You can mix tokens, e.g. ', self::TD).'<code>wordpre[string:max5] [words:max2] plug[string:max5]</code></li>';
+            $this->token_tips_html .= '<li><code>wordpre[string]</code>, <code>[string:5]</code>, <code>[string:max5]</code>, <code>[string:min3]</code> — '.esc_html__('letters appended to prefix (letters only, no hyphen/space).', 'internal-external-link-manager-premium').'</li>';
+            $this->token_tips_html .= '<li><code>wordpress [words] plugin</code>, <code>[words:1]</code>, <code>[words:max2]</code>, <code>[words:min2]</code> — '.esc_html__('word(s) between parts, default 1–3.', 'internal-external-link-manager-premium').'</li>';
+            $this->token_tips_html .= '<li>'.esc_html__('Tokens work only when "Regex" is OFF. You can mix tokens, e.g. ', 'internal-external-link-manager-premium').'<code>wordpre[string:max5] [words:max2] plug[string:max5]</code></li>';
             $this->token_tips_html .= '</ul></div></details>';
         }
         return $this->token_tips_html;
@@ -1426,7 +1421,7 @@ JS;
         $settings = get_option(self::OPT_SETTINGS, array());
         $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
         foreach($pts as $pt){
-            add_meta_box('beeclear_ilm_box', __('Internal Link Phrases/Rules (BeeClear)', self::TD), array($this,'render_metabox'), $pt, 'normal', 'high');
+            add_meta_box('beeclear_ilm_box', __('Internal Link Phrases/Rules (BeeClear)', 'internal-external-link-manager-premium'), array($this,'render_metabox'), $pt, 'normal', 'high');
         }
     }
 
@@ -1442,7 +1437,7 @@ JS;
         $max_per_target_override = get_post_meta($post->ID, self::META_MAX_PER_TARGET, true);
         $target_priority = get_post_meta($post->ID, self::META_TARGET_PRIORITY, true);
 
-        echo '<p>'.esc_html__('Add phrases (or regex). Order matters: top has the highest priority. Case-sensitive applies only when Regex is off.', self::TD).'</p>';
+        echo '<p>'.esc_html__('Add phrases (or regex). Order matters: top has the highest priority. Case-sensitive applies only when Regex is off.', 'internal-external-link-manager-premium').'</p>';
 
         echo $this->render_token_tips_html();
 
@@ -1461,27 +1456,27 @@ JS;
             if (!empty($r['context']) && is_array($r['context'])){
                 $context_words = implode(', ', array_map('trim', $r['context']));
             }
-            $phrase_label = esc_html__('Phrase or regex', self::TD);
-            $context_label = esc_html__('Context words or regex', self::TD);
+            $phrase_label = esc_html__('Phrase or regex', 'internal-external-link-manager-premium');
+            $context_label = esc_html__('Context words or regex', 'internal-external-link-manager-premium');
             echo '<div class="ilm-row"><span class="handle" aria-hidden="true">☰</span>';
             echo '<div class="ilm-rule-fields">';
             echo '<div class="ilm-field-group">';
             echo '<div class="ilm-field-controls">';
             echo '<input type="text" name="beeclear_ilm_rules['.$i.'][phrase]" value="'.esc_attr($phrase).'" class="regular-text" placeholder="'.esc_attr($phrase_label).'" aria-label="'.$phrase_label.'">';
             echo '<div class="ilm-field-flags">';
-            echo '<label><input type="checkbox" class="ilm-regex" name="beeclear_ilm_rules['.$i.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', self::TD).'</label>';
-            echo '<label><input type="checkbox" class="ilm-case" name="beeclear_ilm_rules['.$i.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', self::TD).'</label>';
-            echo '<a href="#" class="button link-delete">'.esc_html__('Remove', self::TD).'</a>';
+            echo '<label><input type="checkbox" class="ilm-regex" name="beeclear_ilm_rules['.$i.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label>';
+            echo '<label><input type="checkbox" class="ilm-case" name="beeclear_ilm_rules['.$i.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>';
+            echo '<a href="#" class="button link-delete">'.esc_html__('Remove', 'internal-external-link-manager-premium').'</a>';
             echo '</div>';
             echo '</div>';
             echo '</div>';
             echo '<div class="ilm-context-field'.($context_flag ? '' : ' hidden').'">';
             echo '<div class="ilm-field-controls">';
-            echo '<input type="text" name="beeclear_ilm_rules['.$i.'][context]" value="'.esc_attr($context_words).'" class="regular-text" placeholder="'.esc_attr__('Additional words required in the same element', self::TD).'" aria-label="'.$context_label.'">';
+            echo '<input type="text" name="beeclear_ilm_rules['.$i.'][context]" value="'.esc_attr($context_words).'" class="regular-text" placeholder="'.esc_attr__('Additional words required in the same element', 'internal-external-link-manager-premium').'" aria-label="'.$context_label.'">';
             echo '<div class="ilm-field-flags">';
-            echo '<label><input type="checkbox" class="ilm-context-regex" name="beeclear_ilm_rules['.$i.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', self::TD).'</label>';
-            echo '<label><input type="checkbox" class="ilm-context-case" name="beeclear_ilm_rules['.$i.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', self::TD).'</label>';
-            echo '<a href="#" class="button button-secondary ilm-context-erase">'.esc_html__('Erase', self::TD).'</a>';
+            echo '<label><input type="checkbox" class="ilm-context-regex" name="beeclear_ilm_rules['.$i.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label>';
+            echo '<label><input type="checkbox" class="ilm-context-case" name="beeclear_ilm_rules['.$i.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>';
+            echo '<a href="#" class="button button-secondary ilm-context-erase">'.esc_html__('Erase', 'internal-external-link-manager-premium').'</a>';
             echo '</div>';
             echo '</div>';
             echo '</div>';
@@ -1489,57 +1484,57 @@ JS;
             echo '</div>'; $i++;
         }
         echo '</div>';
-        echo '<p><a href="#" class="button" id="beeclear-ilm-add">'.esc_html__('Add phrase/rule', self::TD).'</a></p>';
+        echo '<p><a href="#" class="button" id="beeclear-ilm-add">'.esc_html__('Add phrase/rule', 'internal-external-link-manager-premium').'</a></p>';
 
         echo '<div class="ilm-metabox-settings-grid">';
         echo '<div class="ilm-metabox-card">';
-        echo '<h3 class="ilm-metabox-title">'.esc_html__('Search scope', self::TD).'</h3>';
+        echo '<h3 class="ilm-metabox-title">'.esc_html__('Search scope', 'internal-external-link-manager-premium').'</h3>';
         echo '<div class="ilm-metabox-field">';
-        echo '<label class="ilm-metabox-label">'.esc_html__('Allowed HTML elements', self::TD).'</label>';
+        echo '<label class="ilm-metabox-label">'.esc_html__('Allowed HTML elements', 'internal-external-link-manager-premium').'</label>';
         echo '<input type="text" name="beeclear_ilm_allowed_elements" value="'.esc_attr($allowed_tags_raw).'" class="regular-text" placeholder="p, ul, ol" aria-describedby="ilm-allowed-elements-help">';
-        echo '<p id="ilm-allowed-elements-help" class="description">'.esc_html__('Comma-separated tag names (e.g., p, ul). Leave empty to search everywhere.', self::TD).'</p>';
+        echo '<p id="ilm-allowed-elements-help" class="description">'.esc_html__('Comma-separated tag names (e.g., p, ul). Leave empty to search everywhere.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
         echo '<div class="ilm-metabox-field">';
-        echo '<label class="ilm-metabox-label">'.esc_html__('Context matching', self::TD).'</label>';
+        echo '<label class="ilm-metabox-label">'.esc_html__('Context matching', 'internal-external-link-manager-premium').'</label>';
         echo '<label class="ilm-metabox-checkbox"><input type="checkbox" id="beeclear-ilm-context-toggle" name="beeclear_ilm_context_enabled" value="1" '.checked($context_flag, true, false).'> ';
-        echo esc_html__('Require extra words/phrases in the same element as the matched phrase', self::TD).'</label>';
-        echo '<p class="description">'.esc_html__('When enabled, each phrase can specify additional words that must appear in the same HTML element (supports tokens and regex).', self::TD).'</p>';
+        echo esc_html__('Require extra words/phrases in the same element as the matched phrase', 'internal-external-link-manager-premium').'</label>';
+        echo '<p class="description">'.esc_html__('When enabled, each phrase can specify additional words that must appear in the same HTML element (supports tokens and regex).', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
         echo '</div>';
 
         echo '<div class="ilm-metabox-card">';
-        echo '<h3 class="ilm-metabox-title">'.esc_html__('Per-target linking rules', self::TD).'</h3>';
+        echo '<h3 class="ilm-metabox-title">'.esc_html__('Per-target linking rules', 'internal-external-link-manager-premium').'</h3>';
         echo '<div class="ilm-metabox-field">';
-        echo '<label class="ilm-metabox-label" for="beeclear-ilm-max-per-target">'.esc_html__('Max links per INTERNAL target (this page)', self::TD).'</label>';
-        echo '<input id="beeclear-ilm-max-per-target" type="number" min="0" name="beeclear_ilm_max_per_target" value="'.esc_attr($max_per_target_override).'" placeholder="'.esc_attr__('Use global', self::TD).'">';
-        echo '<p class="description">'.esc_html__('Leave empty to use the global cap. 0 = unlimited for this target.', self::TD).'</p>';
+        echo '<label class="ilm-metabox-label" for="beeclear-ilm-max-per-target">'.esc_html__('Max links per INTERNAL target (this page)', 'internal-external-link-manager-premium').'</label>';
+        echo '<input id="beeclear-ilm-max-per-target" type="number" min="0" name="beeclear_ilm_max_per_target" value="'.esc_attr($max_per_target_override).'" placeholder="'.esc_attr__('Use global', 'internal-external-link-manager-premium').'">';
+        echo '<p class="description">'.esc_html__('Leave empty to use the global cap. 0 = unlimited for this target.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
 
         echo '<div class="ilm-metabox-field">';
-        echo '<label class="ilm-metabox-label" for="beeclear-ilm-target-priority">'.esc_html__('Priority of this target for internal links', self::TD).'</label>';
+        echo '<label class="ilm-metabox-label" for="beeclear-ilm-target-priority">'.esc_html__('Priority of this target for internal links', 'internal-external-link-manager-premium').'</label>';
         echo '<input id="beeclear-ilm-target-priority" type="number" min="0" max="100" name="beeclear_ilm_target_priority" value="'.esc_attr($target_priority === '' ? '0' : $target_priority).'" placeholder="0">';
-        echo '<p class="description">'.esc_html__('Higher number (0–100) = this post/page is linked first when limits apply. Default 0.', self::TD).'</p>';
+        echo '<p class="description">'.esc_html__('Higher number (0–100) = this post/page is linked first when limits apply. Default 0.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
 
         echo '<div class="ilm-metabox-field">';
         echo '<label class="ilm-metabox-checkbox"><input type="checkbox" name="beeclear_ilm_no_outgoing" value="1" '.checked($no_out, true, false).'> ';
-        echo esc_html__('Disable autolinking from this post (no outgoing links)', self::TD).'</label>';
-        echo '<p class="description">'.esc_html__('When enabled, the plugin will not inject internal or external links into this post content.', self::TD).'</p>';
+        echo esc_html__('Disable autolinking from this post (no outgoing links)', 'internal-external-link-manager-premium').'</label>';
+        echo '<p class="description">'.esc_html__('When enabled, the plugin will not inject internal or external links into this post content.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
         echo '</div>';
         echo '</div>';
 
         // echo '<p><label><input type="checkbox" name="beeclear_ilm_rules_clear" value="1"> '.
-        //     esc_html__('Clear all phrases on save (explicit action)', self::TD).
+        //     esc_html__('Clear all phrases on save (explicit action)', 'internal-external-link-manager-premium').
         //     '</label><br><span class="description">'.
-        //     esc_html__('If not checked, the plugin will NEVER wipe phrases because of empty/partial POST (e.g., after closing an autosave notice).', self::TD).
+        //     esc_html__('If not checked, the plugin will NEVER wipe phrases because of empty/partial POST (e.g., after closing an autosave notice).', 'internal-external-link-manager-premium').
         //     '</span></p>';
 
         $settings_url = esc_url(admin_url('admin.php?page=beeclear-ilm'));
-        $menu_name = esc_html__('Internal & External Link Manager', self::TD);
-        echo '<hr><p><strong>'.__('Admin menu name:', self::TD).'</strong> '
+        $menu_name = esc_html__('Internal & External Link Manager', 'internal-external-link-manager-premium');
+        echo '<hr><p><strong>'.__('Admin menu name:', 'internal-external-link-manager-premium').'</strong> '
             . '<a href="'.$settings_url.'" target="_blank" rel="noopener noreferrer">'.$menu_name.'</a></p>';
-        echo '<p><strong>'.__('Author:', self::TD).'</strong> <a href="https://beeclear.pl">BeeClear</a></p>';
+        echo '<p><strong>'.__('Author:', 'internal-external-link-manager-premium').'</strong> <a href="https://beeclear.pl">BeeClear</a></p>';
     }
 
     public function save_post_rules($post_id){
@@ -1560,7 +1555,7 @@ JS;
 
         $meta_changed = false;
 
-        $allowed_raw   = isset($_POST['beeclear_ilm_allowed_elements']) ? (string) wp_unslash($_POST['beeclear_ilm_allowed_elements']) : '';
+        $allowed_raw   = isset($_POST['beeclear_ilm_allowed_elements']) ? sanitize_text_field((string) wp_unslash($_POST['beeclear_ilm_allowed_elements'])) : '';
         $allowed_tags  = $this->parse_tag_list($allowed_raw);
         $allowed_clean = implode(', ', $allowed_tags);
         $current_allowed = (string) get_post_meta($post_id, self::META_ALLOWED_TAGS, true);
@@ -1749,7 +1744,8 @@ JS;
         if ( empty($settings['auto_scan_on_save']) ) return;
 
         $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
-        $this->start_overview_scan_now($pts, __('Auto scan started after save: %d pages queued.', self::TD));
+        /* translators: %d: number of pages queued for the overview scan. */
+        $this->start_overview_scan_now($pts, __('Auto scan started after save: %d pages queued.', 'internal-external-link-manager-premium'));
     }
 
     private function rebuild_index(){
@@ -1758,7 +1754,7 @@ JS;
         $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
 
         if ( ! class_exists('WP_Query') ) {
-            $this->last_rebuild_error = __('Index rebuild failed: WP_Query is unavailable.', self::TD);
+            $this->last_rebuild_error = __('Index rebuild failed: WP_Query is unavailable.', 'internal-external-link-manager-premium');
             update_option(self::OPT_INDEX, array(), false);
             return array();
         }
@@ -1773,7 +1769,8 @@ JS;
             'order'          => 'ASC',
         ));
         if ( is_wp_error($q) ) {
-            $this->last_rebuild_error = sprintf(__('Index rebuild failed: %s', self::TD), $q->get_error_message());
+            /* translators: %s: WP_Query error message. */
+            $this->last_rebuild_error = sprintf(__('Index rebuild failed: %s', 'internal-external-link-manager-premium'), $q->get_error_message());
             update_option(self::OPT_INDEX, array(), false);
             return array();
         }
@@ -2583,7 +2580,8 @@ JS;
         if ( $this->autolink_timing_ms <= 0 ) return;
 
         $ms = round($this->autolink_timing_ms, 2);
-        printf('<script>console.log("%s");</script>', esc_js(sprintf(__('Internal linking added %.2f ms to render time.', self::TD), $ms)));
+        /* translators: %.2f: time in milliseconds added by internal linking. */
+        printf('<script>console.log("%s");</script>', esc_js(sprintf(__('Internal linking added %.2f ms to render time.', 'internal-external-link-manager-premium'), $ms)));
     }
 
     public function render_dashboard(){
@@ -2598,8 +2596,8 @@ JS;
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
-                echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt.', self::TD).'</p></div>';
-                $this->log_activity(__('Index rebuilt from dashboard.', self::TD));
+                echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
+                $this->log_activity(__('Index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -2613,8 +2611,8 @@ JS;
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
-                echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', self::TD).'</p></div>';
-                $this->log_activity(__('Data cleared and index rebuilt from dashboard.', self::TD));
+                echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
+                $this->log_activity(__('Data cleared and index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -2626,8 +2624,8 @@ JS;
                         if ( $this->last_rebuild_error !== '' ) {
                             echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
                         } else {
-                            echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', self::TD).'</p></div>';
-                            $this->log_activity(__('Database purged and index rebuilt from dashboard.', self::TD));
+                            echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
+                            $this->log_activity(__('Database purged and index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
                         }
                 }
 
@@ -2645,7 +2643,7 @@ JS;
         $summary_now = $this->summarize_index(get_option(self::OPT_INDEX, array()));
 
         echo '<div class="wrap">';
-        echo '<h1>'.esc_html__('Internal Link Manager (BeeClear) — Global settings', self::TD).'</h1>';
+        echo '<h1>'.esc_html__('Internal Link Manager (BeeClear) — Global settings', 'internal-external-link-manager-premium').'</h1>';
         echo $this->render_author_note();
 
         echo '<div class="beeclear-grid beeclear-grid--with-sidebar">';
@@ -2656,43 +2654,43 @@ JS;
         settings_fields('beeclear_ilm_group');
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>'.esc_html__('Global settings', self::TD).'</h2>';
-        echo '<p class="description">'.esc_html__('Fine-tune how automatic links look, where they appear, and how the plugin maintains its data.', self::TD).'</p>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span>'.esc_html__('Global settings', 'internal-external-link-manager-premium').'</h2>';
+        echo '<p class="description">'.esc_html__('Fine-tune how automatic links look, where they appear, and how the plugin maintains its data.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('Link output defaults', self::TD).'</h3>';
+        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('Link output defaults', 'internal-external-link-manager-premium').'</h3>';
         echo '<table class="form-table" role="presentation">';
-        echo '<tr><th>'.esc_html__('rel attribute (default)', self::TD).'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[rel]" value="'.esc_attr($s['rel']).'" class="regular-text"><span class="inline-help">'.esc_html__('e.g. nofollow, sponsored, noopener', self::TD).'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('rel attribute (default)', 'internal-external-link-manager-premium').'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[rel]" value="'.esc_attr($s['rel']).'" class="regular-text"><span class="inline-help">'.esc_html__('e.g. nofollow, sponsored, noopener', 'internal-external-link-manager-premium').'</span></td></tr>';
 
-        echo '<tr><th>'.esc_html__('Default Title & Aria for INTERNAL links', self::TD).'</th><td>';
+        echo '<tr><th>'.esc_html__('Default Title & Aria for INTERNAL links', 'internal-external-link-manager-premium').'</th><td>';
         echo '<div class="ilm-field-grid">';
-        echo '<label>'.esc_html__('Title', self::TD).'<br><select name="'.self::OPT_SETTINGS.'[title_mode]">';
+        echo '<label>'.esc_html__('Title', 'internal-external-link-manager-premium').'<br><select name="'.self::OPT_SETTINGS.'[title_mode]">';
         foreach(array('none','phrase','post_title','custom') as $mode){ printf('<option value="%1$s"%2$s>%1$s</option>', esc_attr($mode), selected($s['title_mode'],$mode,false)); }
         echo '</select></label>';
-        echo '<label>'.esc_html__('Aria-label', self::TD).'<br><select name="'.self::OPT_SETTINGS.'[aria_mode]">';
+        echo '<label>'.esc_html__('Aria-label', 'internal-external-link-manager-premium').'<br><select name="'.self::OPT_SETTINGS.'[aria_mode]">';
         foreach(array('none','phrase','post_title','custom') as $mode){ printf('<option value="%1$s"%2$s>%1$s</option>', esc_attr($mode), selected($s['aria_mode'],$mode,false)); }
         echo '</select></label></div>';
 
         echo '<div class="ilm-field-grid">';
-        echo '<input type="text" name="'.self::OPT_SETTINGS.'[title_custom]" value="'.esc_attr($s['title_custom']).'" placeholder="'.esc_attr__('Custom title text', self::TD).'" class="regular-text">';
-        echo '<input type="text" name="'.self::OPT_SETTINGS.'[aria_custom]" value="'.esc_attr($s['aria_custom']).'" placeholder="'.esc_attr__('Custom aria-label', self::TD).'" class="regular-text">';
+        echo '<input type="text" name="'.self::OPT_SETTINGS.'[title_custom]" value="'.esc_attr($s['title_custom']).'" placeholder="'.esc_attr__('Custom title text', 'internal-external-link-manager-premium').'" class="regular-text">';
+        echo '<input type="text" name="'.self::OPT_SETTINGS.'[aria_custom]" value="'.esc_attr($s['aria_custom']).'" placeholder="'.esc_attr__('Custom aria-label', 'internal-external-link-manager-premium').'" class="regular-text">';
         echo '</div>';
-        echo '<span class="inline-help">'.esc_html__('External links define their own Title/Aria per rule.', self::TD).'</span>';
+        echo '<span class="inline-help">'.esc_html__('External links define their own Title/Aria per rule.', 'internal-external-link-manager-premium').'</span>';
         echo '</td></tr>';
 
-        echo '<tr><th>'.esc_html__('Default CSS class', self::TD).'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[default_class]" value="'.esc_attr($s['default_class']).'" class="regular-text"></td></tr>';
-        echo '<tr><th>'.esc_html__('Link template', self::TD).'</th><td><textarea name="'.self::OPT_SETTINGS.'[link_template]" rows="3" class="large-text code">'.esc_textarea($s['link_template']).'</textarea><span class="inline-help">'.esc_html__('Placeholders: {url} {text} {rel} {title} {aria} {class}. Empty attributes are omitted.', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Cross-inline (formatting tags)', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[cross_inline]" value="1" '.checked(!empty($s['cross_inline']), true, false).'> '.esc_html__('Allow matching across u, i/em, b/strong, mark (literal phrases only).', self::TD).'</label><span class="inline-help">'.esc_html__('Lets a phrase span across simple formatting tags. Example: "<strong>Word</strong>Press".', self::TD).'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Default CSS class', 'internal-external-link-manager-premium').'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[default_class]" value="'.esc_attr($s['default_class']).'" class="regular-text"></td></tr>';
+        echo '<tr><th>'.esc_html__('Link template', 'internal-external-link-manager-premium').'</th><td><textarea name="'.self::OPT_SETTINGS.'[link_template]" rows="3" class="large-text code">'.esc_textarea($s['link_template']).'</textarea><span class="inline-help">'.esc_html__('Placeholders: {url} {text} {rel} {title} {aria} {class}. Empty attributes are omitted.', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Cross-inline (formatting tags)', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[cross_inline]" value="1" '.checked(!empty($s['cross_inline']), true, false).'> '.esc_html__('Allow matching across u, i/em, b/strong, mark (literal phrases only).', 'internal-external-link-manager-premium').'</label><span class="inline-help">'.esc_html__('Lets a phrase span across simple formatting tags. Example: "<strong>Word</strong>Press".', 'internal-external-link-manager-premium').'</span></td></tr>';
         echo '</table>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('Placement & targeting', self::TD).'</h3>';
+        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('Placement & targeting', 'internal-external-link-manager-premium').'</h3>';
         echo '<table class="form-table" role="presentation">';
-        echo '<tr><th>'.esc_html__('Skip elements (INTERNAL)', self::TD).'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[skip_elements_internal]" value="'.esc_attr($s['skip_elements_internal']).'" class="regular-text" placeholder="h2 - li - h4"><span class="inline-help">'.esc_html__('Do not inject INTERNAL links inside these HTML tags. Separate with dashes, commas or spaces. Example: h2 - li - h4', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Skip elements (EXTERNAL)', self::TD).'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[skip_elements_external]" value="'.esc_attr($s['skip_elements_external']).'" class="regular-text" placeholder="h2 - li - h4"><span class="inline-help">'.esc_html__('Do not inject EXTERNAL links inside these HTML tags. Separate with dashes, commas or spaces. Example: h2 - li - h4', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Process INTERNAL post types', self::TD).'</th><td>';
+        echo '<tr><th>'.esc_html__('Skip elements (INTERNAL)', 'internal-external-link-manager-premium').'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[skip_elements_internal]" value="'.esc_attr($s['skip_elements_internal']).'" class="regular-text" placeholder="h2 - li - h4"><span class="inline-help">'.esc_html__('Do not inject INTERNAL links inside these HTML tags. Separate with dashes, commas or spaces. Example: h2 - li - h4', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Skip elements (EXTERNAL)', 'internal-external-link-manager-premium').'</th><td><input type="text" name="'.self::OPT_SETTINGS.'[skip_elements_external]" value="'.esc_attr($s['skip_elements_external']).'" class="regular-text" placeholder="h2 - li - h4"><span class="inline-help">'.esc_html__('Do not inject EXTERNAL links inside these HTML tags. Separate with dashes, commas or spaces. Example: h2 - li - h4', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Process INTERNAL post types', 'internal-external-link-manager-premium').'</th><td>';
         echo '<div class="ilm-checkbox-grid">';
         $pts = get_post_types(array('public'=>true),'objects');
         foreach($pts as $pt){
@@ -2705,35 +2703,35 @@ JS;
         }
         echo '</div>';
         echo '</td></tr>';
-        echo '<tr><th>'.esc_html__('Process INTERNAL links on archives (lists)', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[process_on_archives]" value="1" '.checked($s['process_on_archives'], true, false).'> '.esc_html__('Enable (may add load).', self::TD).'</label></td></tr>';
-        echo '<tr><th>'.esc_html__('Minimum content length to process', self::TD).'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[min_content_length]" value="'.esc_attr($s['min_content_length']).'"></td></tr>';
+        echo '<tr><th>'.esc_html__('Process INTERNAL links on archives (lists)', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[process_on_archives]" value="1" '.checked($s['process_on_archives'], true, false).'> '.esc_html__('Enable (may add load).', 'internal-external-link-manager-premium').'</label></td></tr>';
+        echo '<tr><th>'.esc_html__('Minimum content length to process', 'internal-external-link-manager-premium').'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[min_content_length]" value="'.esc_attr($s['min_content_length']).'"></td></tr>';
         echo '</table>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-filter" aria-hidden="true"></span>'.esc_html__('Limits & caps', self::TD).'</h3>';
+        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-filter" aria-hidden="true"></span>'.esc_html__('Limits & caps', 'internal-external-link-manager-premium').'</h3>';
         echo '<table class="form-table" role="presentation">';
-        echo '<tr><th>'.esc_html__('Max links per INTERNAL target (per page)', self::TD).'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[max_per_target]" value="'.esc_attr($s['max_per_target']).'"><span class="inline-help">'.esc_html__('0 = unlimited', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Max TOTAL links injected per page (internal + external)', self::TD).'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[max_total_per_page]" value="'.esc_attr($s['max_total_per_page']).'"><span class="inline-help">'.esc_html__('0 = unlimited', self::TD).'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Max links per INTERNAL target (per page)', 'internal-external-link-manager-premium').'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[max_per_target]" value="'.esc_attr($s['max_per_target']).'"><span class="inline-help">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Max TOTAL links injected per page (internal + external)', 'internal-external-link-manager-premium').'</th><td><input type="number" min="0" name="'.self::OPT_SETTINGS.'[max_total_per_page]" value="'.esc_attr($s['max_total_per_page']).'"><span class="inline-help">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></td></tr>';
         echo '</table>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-update" aria-hidden="true"></span>'.esc_html__('Automation & logs', self::TD).'</h3>';
+        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-update" aria-hidden="true"></span>'.esc_html__('Automation & logs', 'internal-external-link-manager-premium').'</h3>';
         echo '<table class="form-table" role="presentation">';
-        echo '<tr><th>'.esc_html__('Auto-run scan after saving content', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[auto_scan_on_save]" value="1" '.checked(!empty($s['auto_scan_on_save']), true, false).'> '.esc_html__('Trigger “Scan site” whenever a supported post/page is added or updated.', self::TD).'</label><span class="inline-help">'.esc_html__('Runs a full overview scan (including external links) after publishing updates.', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Auto-run scan after saving external rules', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[auto_scan_on_external]" value="1" '.checked(!empty($s['auto_scan_on_external']), true, false).'> '.esc_html__('Trigger “Scan site” whenever external linking rules are added or updated.', self::TD).'</label><span class="inline-help">'.esc_html__('Starts an overview scan after saving external link destinations to capture new outbound links.', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Activity log size', self::TD).'</th><td><input type="number" min="1" name="'.self::OPT_SETTINGS.'[activity_log_limit]" value="'.esc_attr($s['activity_log_limit']).'" placeholder="'.esc_attr__('Unlimited', self::TD).'">';
-        echo '<span class="inline-help">'.esc_html__('Limit how many entries are kept in the activity log. Leave empty for no limit.', self::TD).'</span></td></tr>';
-        echo '<tr><th>'.esc_html__('Debug: log autolink timing', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[log_internal_timing]" value="1" '.checked(!empty($s['log_internal_timing']), true, false).'> '.esc_html__('Console-log extra render time added by internal linking logic.', self::TD).'</label><span class="inline-help">'.esc_html__('Shows how many milliseconds were spent in autolinking during this page load (front-end only).', self::TD).'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Auto-run scan after saving content', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[auto_scan_on_save]" value="1" '.checked(!empty($s['auto_scan_on_save']), true, false).'> '.esc_html__('Trigger “Scan site” whenever a supported post/page is added or updated.', 'internal-external-link-manager-premium').'</label><span class="inline-help">'.esc_html__('Runs a full overview scan (including external links) after publishing updates.', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Auto-run scan after saving external rules', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[auto_scan_on_external]" value="1" '.checked(!empty($s['auto_scan_on_external']), true, false).'> '.esc_html__('Trigger “Scan site” whenever external linking rules are added or updated.', 'internal-external-link-manager-premium').'</label><span class="inline-help">'.esc_html__('Starts an overview scan after saving external link destinations to capture new outbound links.', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Activity log size', 'internal-external-link-manager-premium').'</th><td><input type="number" min="1" name="'.self::OPT_SETTINGS.'[activity_log_limit]" value="'.esc_attr($s['activity_log_limit']).'" placeholder="'.esc_attr__('Unlimited', 'internal-external-link-manager-premium').'">';
+        echo '<span class="inline-help">'.esc_html__('Limit how many entries are kept in the activity log. Leave empty for no limit.', 'internal-external-link-manager-premium').'</span></td></tr>';
+        echo '<tr><th>'.esc_html__('Debug: log autolink timing', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[log_internal_timing]" value="1" '.checked(!empty($s['log_internal_timing']), true, false).'> '.esc_html__('Console-log extra render time added by internal linking logic.', 'internal-external-link-manager-premium').'</label><span class="inline-help">'.esc_html__('Shows how many milliseconds were spent in autolinking during this page load (front-end only).', 'internal-external-link-manager-premium').'</span></td></tr>';
         echo '</table>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-shield" aria-hidden="true"></span>'.esc_html__('Cleanup preferences', self::TD).'</h3>';
+        echo '<h3 class="ilm-section-title"><span class="dashicons dashicons-shield" aria-hidden="true"></span>'.esc_html__('Cleanup preferences', 'internal-external-link-manager-premium').'</h3>';
         echo '<table class="form-table" role="presentation">';
-        echo '<tr><th>'.esc_html__('Clean all plugin data on uninstall', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[clean_on_uninstall]" value="1" '.checked($s['clean_on_uninstall'], true, false).'> '.esc_html__('Yes, remove data on uninstall', self::TD).'</label></td></tr>';
-        echo '<tr><th>'.esc_html__('Clean runtime data on deactivation', self::TD).'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[clean_on_deactivation]" value="1" '.checked($s['clean_on_deactivation'], true, false).'> '.esc_html__('Clear index & counters when plugin is deactivated', self::TD).'</label></td></tr>';
+        echo '<tr><th>'.esc_html__('Clean all plugin data on uninstall', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[clean_on_uninstall]" value="1" '.checked($s['clean_on_uninstall'], true, false).'> '.esc_html__('Yes, remove data on uninstall', 'internal-external-link-manager-premium').'</label></td></tr>';
+        echo '<tr><th>'.esc_html__('Clean runtime data on deactivation', 'internal-external-link-manager-premium').'</th><td><label><input type="checkbox" name="'.self::OPT_SETTINGS.'[clean_on_deactivation]" value="1" '.checked($s['clean_on_deactivation'], true, false).'> '.esc_html__('Clear index & counters when plugin is deactivated', 'internal-external-link-manager-premium').'</label></td></tr>';
         echo '</table>';
         echo '</div>';
 
@@ -2748,50 +2746,50 @@ JS;
         echo '<div class="ilm-wrap">';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-controls-repeat" aria-hidden="true"></span>'.esc_html__('Actions', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-controls-repeat" aria-hidden="true"></span>'.esc_html__('Actions', 'internal-external-link-manager-premium').'</h2>';
         echo '<div class="beeclear-actions">';
         echo '<div class="beeclear-actions__row">';
         echo '<form method="post" class="beeclear-inline-action">';
         wp_nonce_field(self::NONCE, self::NONCE);
-        echo '<button class="button button-primary" name="beeclear_ilm_reindex_now" value="1">'.esc_html__('Rebuild index now', self::TD).'</button>';
+        echo '<button class="button button-primary" name="beeclear_ilm_reindex_now" value="1">'.esc_html__('Rebuild index now', 'internal-external-link-manager-premium').'</button>';
         echo '</form>';
-        echo '<button type="button" class="button button-secondary" id="beeclear-ilm-start-overview-scan">'.esc_html__('Scan site to refresh overview', self::TD).'</button>';
+        echo '<button type="button" class="button button-secondary" id="beeclear-ilm-start-overview-scan">'.esc_html__('Scan site to refresh overview', 'internal-external-link-manager-premium').'</button>';
         echo '<div class="beeclear-progress beeclear-progress--inline" id="beeclear-ilm-progress" aria-live="polite" hidden>';
         echo '<div class="beeclear-progress__track"><div class="beeclear-progress__bar" style="width:0%"></div></div>';
-        echo '<div class="beeclear-progress__label">'.esc_html__('Idle — no scan in progress.', self::TD).'</div>';
+        echo '<div class="beeclear-progress__label">'.esc_html__('Idle — no scan in progress.', 'internal-external-link-manager-premium').'</div>';
         echo '</div>';
         echo '</div>';
         echo '</div>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('Last scan summary', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('Last scan summary', 'internal-external-link-manager-premium').'</h2>';
         echo '<div id="beeclear-ilm-scan-summary">'.$this->render_scan_summary_html().'</div>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>'.esc_html__('Maintenance', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>'.esc_html__('Maintenance', 'internal-external-link-manager-premium').'</h2>';
         echo '<div class="beeclear-actions beeclear-actions--stacked">';
 
         echo '<form method="post" class="beeclear-inline-form">';
         wp_nonce_field(self::NONCE, self::NONCE);
-        echo '<label><input type="checkbox" name="confirm" required> '.esc_html__('Confirm clearing runtime data (index & linkmap).', self::TD).'</label>';
-        echo '<button class="button button-secondary" name="beeclear_ilm_clear_data" value="1">'.esc_html__('Clear data & rebuild index', self::TD).'</button>';
+        echo '<label><input type="checkbox" name="confirm" required> '.esc_html__('Confirm clearing runtime data (index & linkmap).', 'internal-external-link-manager-premium').'</label>';
+        echo '<button class="button button-secondary" name="beeclear_ilm_clear_data" value="1">'.esc_html__('Clear data & rebuild index', 'internal-external-link-manager-premium').'</button>';
         echo '</form>';
 
         echo '<form method="post" class="beeclear-inline-form">';
         wp_nonce_field(self::NONCE, self::NONCE);
         echo '<label><input type="checkbox" name="confirm" required> ';
-        echo esc_html__('Confirm full cleanup: remove internal rules (per post), external rules, link counters & index.', self::TD);
+        echo esc_html__('Confirm full cleanup: remove internal rules (per post), external rules, link counters & index.', 'internal-external-link-manager-premium');
         echo '</label>';
-        echo '<button class="button button-secondary" name="beeclear_ilm_purge_db" value="1">'.esc_html__('Purge database (ILM) & rebuild index', self::TD).'</button>';
+        echo '<button class="button button-secondary" name="beeclear_ilm_purge_db" value="1">'.esc_html__('Purge database (ILM) & rebuild index', 'internal-external-link-manager-premium').'</button>';
         echo '</form>';
 
         echo '</div>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-media-text" aria-hidden="true"></span>'.esc_html__('Activity log', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-media-text" aria-hidden="true"></span>'.esc_html__('Activity log', 'internal-external-link-manager-premium').'</h2>';
         echo $this->render_activity_log_html();
         echo '</div>';
 
@@ -2815,12 +2813,12 @@ JS;
     private function render_index_summary_html($summary){
         if(!$summary) return '';
         $out  = '<p>';
-        $out .= esc_html__('Total phrases:', self::TD).' <strong>'.intval($summary['total_phrases']).'</strong> &nbsp; ';
-        $out .= esc_html__('Targets with phrases:', self::TD).' <strong>'.intval($summary['total_targets']).'</strong>';
+        $out .= esc_html__('Total phrases:', 'internal-external-link-manager-premium').' <strong>'.intval($summary['total_phrases']).'</strong> &nbsp; ';
+        $out .= esc_html__('Targets with phrases:', 'internal-external-link-manager-premium').' <strong>'.intval($summary['total_targets']).'</strong>';
         $out .= '</p>';
         if(!empty($summary['per_target'])){
-            $out .= '<details><summary>'.esc_html__('Per target breakdown (top 50):', self::TD).'</summary>';
-            $out .= '<table class="widefat striped" style="margin-top:8px"><thead><tr><th>ID</th><th>'.esc_html__('Title', self::TD).'</th><th>'.esc_html__('# phrases', self::TD).'</th></tr></thead><tbody>';
+            $out .= '<details><summary>'.esc_html__('Per target breakdown (top 50):', 'internal-external-link-manager-premium').'</summary>';
+            $out .= '<table class="widefat striped" style="margin-top:8px"><thead><tr><th>ID</th><th>'.esc_html__('Title', 'internal-external-link-manager-premium').'</th><th>'.esc_html__('# phrases', 'internal-external-link-manager-premium').'</th></tr></thead><tbody>';
             $i=0;
             foreach($summary['per_target'] as $tid=>$cnt){
                 if($i++>=50) break;
@@ -2835,17 +2833,17 @@ JS;
     private function render_scan_summary_html(){
         $summary = $this->get_scan_summary();
         if ( empty($summary['completed_at']) ) {
-            return '<p class="description">'.esc_html__('No scan has been completed yet.', self::TD).'</p>';
+            return '<p class="description">'.esc_html__('No scan has been completed yet.', 'internal-external-link-manager-premium').'</p>';
         }
 
         $completed = date_i18n(get_option('date_format').' '.get_option('time_format'), (int) $summary['completed_at']);
 
         $out  = '<div class="beeclear-scan-summary">';
-        $out .= '<p><strong>'.esc_html__('Last scan', self::TD).':</strong> '.esc_html($completed).'</p>';
+        $out .= '<p><strong>'.esc_html__('Last scan', 'internal-external-link-manager-premium').':</strong> '.esc_html($completed).'</p>';
         $out .= '<ul>';
-        $out .= '<li>'.esc_html__('Scanned pages', self::TD).': <strong>'.intval($summary['scanned']).'</strong></li>';
-        $out .= '<li>'.esc_html__('Internal links in index', self::TD).': <strong>'.intval($summary['internal_links']).'</strong></li>';
-        $out .= '<li>'.esc_html__('External links in index', self::TD).': <strong>'.intval($summary['external_links']).'</strong></li>';
+        $out .= '<li>'.esc_html__('Scanned pages', 'internal-external-link-manager-premium').': <strong>'.intval($summary['scanned']).'</strong></li>';
+        $out .= '<li>'.esc_html__('Internal links in index', 'internal-external-link-manager-premium').': <strong>'.intval($summary['internal_links']).'</strong></li>';
+        $out .= '<li>'.esc_html__('External links in index', 'internal-external-link-manager-premium').': <strong>'.intval($summary['external_links']).'</strong></li>';
         $out .= '</ul>';
         $out .= '</div>';
 
@@ -2854,7 +2852,7 @@ JS;
 
     private function render_activity_log_entries_html($entries){
         if ( empty($entries) ) {
-            return '<div class="beeclear-card__logs" role="log" aria-live="polite"><p class="description">'.esc_html__('No log entries yet.', self::TD).'</p></div>';
+            return '<div class="beeclear-card__logs" role="log" aria-live="polite"><p class="description">'.esc_html__('No log entries yet.', 'internal-external-link-manager-premium').'</p></div>';
         }
 
         $out = '<div class="beeclear-card__logs" role="log" aria-live="polite">';
@@ -2885,10 +2883,11 @@ JS;
         $prev_disabled = $page <= 1 ? ' disabled' : '';
         $next_disabled = $page >= $total_pages ? ' disabled' : '';
 
-        $out  = '<div class="beeclear-log-pagination" aria-label="'.esc_attr__('Activity log pagination', self::TD).'">';
-        $out .= '<button type="button" class="button" data-log-page="'.intval(max(1, $page - 1)).'"'. $prev_disabled .'>'.esc_html__('Previous', self::TD).'</button>';
-        $out .= '<span class="beeclear-log-pagination__status">'.esc_html( sprintf( __('Page %d of %d', self::TD), $page, $total_pages ) ).'</span>';
-        $out .= '<button type="button" class="button" data-log-page="'.intval(min($total_pages, $page + 1)).'"'. $next_disabled .'>'.esc_html__('Next', self::TD).'</button>';
+        $out  = '<div class="beeclear-log-pagination" aria-label="'.esc_attr__('Activity log pagination', 'internal-external-link-manager-premium').'">';
+        $out .= '<button type="button" class="button" data-log-page="'.intval(max(1, $page - 1)).'"'. $prev_disabled .'>'.esc_html__('Previous', 'internal-external-link-manager-premium').'</button>';
+        /* translators: 1: current page number, 2: total number of pages. */
+        $out .= '<span class="beeclear-log-pagination__status">'.esc_html( sprintf( __('Page %1$d of %2$d', 'internal-external-link-manager-premium'), $page, $total_pages ) ).'</span>';
+        $out .= '<button type="button" class="button" data-log-page="'.intval(min($total_pages, $page + 1)).'"'. $next_disabled .'>'.esc_html__('Next', 'internal-external-link-manager-premium').'</button>';
         $out .= '</div>';
 
         return $out;
@@ -2997,7 +2996,7 @@ JS;
         $rows = array();
         if ($view === 'targets'){
             if(empty($phrases_per_target)){
-                echo '<p>'.esc_html__('No phrases defined yet.', self::TD).'</p>';
+                echo '<p>'.esc_html__('No phrases defined yet.', 'internal-external-link-manager-premium').'</p>';
                 return;
             }
             foreach ($phrases_per_target as $tid => $cnt) {
@@ -3051,13 +3050,13 @@ JS;
             unset($row);
 
             if (empty($rows)){
-                echo '<p>'.esc_html__('No links recorded yet.', self::TD).'</p>';
+                echo '<p>'.esc_html__('No links recorded yet.', 'internal-external-link-manager-premium').'</p>';
                 return;
             }
         } else {
             $rows = $this->build_external_overview_rows();
             if (empty($rows)){
-                echo '<p>'.esc_html__('No external rules defined yet.', self::TD).'</p>';
+                echo '<p>'.esc_html__('No external rules defined yet.', 'internal-external-link-manager-premium').'</p>';
                 return;
             }
         }
@@ -3131,8 +3130,8 @@ JS;
             'format'    => '',
             'current'   => $page,
             'total'     => $total_pages,
-            'prev_text' => __('« Previous', self::TD),
-            'next_text' => __('Next »', self::TD),
+            'prev_text' => __('« Previous', 'internal-external-link-manager-premium'),
+            'next_text' => __('Next »', 'internal-external-link-manager-premium'),
             'add_args'  => false,
         ));
 
@@ -3141,23 +3140,23 @@ JS;
         $toggle_external_url = add_query_arg(array_merge($base_args, array('ilm_view' => 'external', 'ilm_page' => 1)), admin_url('admin.php'));
 
         echo '<div class="beeclear-ilm-overview-controls">';
-        echo '<div class="beeclear-ilm-view-toggle" role="group" aria-label="'.esc_attr__('Change overview layout', self::TD).'">';
-        echo '<a class="button'.($view === 'targets' ? ' button-primary' : '').'" href="'.esc_url($toggle_target_url).'">'.esc_html__('By target', self::TD).'</a>';
-        echo '<a class="button'.($view === 'sources' ? ' button-primary' : '').'" href="'.esc_url($toggle_source_url).'">'.esc_html__('By source', self::TD).'</a>';
-        echo '<a class="button'.($view === 'external' ? ' button-primary' : '').'" href="'.esc_url($toggle_external_url).'">'.esc_html__('External targets', self::TD).'</a>';
+        echo '<div class="beeclear-ilm-view-toggle" role="group" aria-label="'.esc_attr__('Change overview layout', 'internal-external-link-manager-premium').'">';
+        echo '<a class="button'.($view === 'targets' ? ' button-primary' : '').'" href="'.esc_url($toggle_target_url).'">'.esc_html__('By target', 'internal-external-link-manager-premium').'</a>';
+        echo '<a class="button'.($view === 'sources' ? ' button-primary' : '').'" href="'.esc_url($toggle_source_url).'">'.esc_html__('By source', 'internal-external-link-manager-premium').'</a>';
+        echo '<a class="button'.($view === 'external' ? ' button-primary' : '').'" href="'.esc_url($toggle_external_url).'">'.esc_html__('External targets', 'internal-external-link-manager-premium').'</a>';
         echo '</div>';
         echo '<form method="get" class="beeclear-ilm-filter">';
         echo '<input type="hidden" name="page" value="'.esc_attr('beeclear-ilm-internal-overview').'">';
         echo '<input type="hidden" name="ilm_view" value="'.esc_attr($view).'">';
-        echo '<label for="beeclear-ilm-filter" class="screen-reader-text">'.esc_html__('Search', self::TD).'</label>';
-        echo '<input id="beeclear-ilm-filter" type="search" name="ilm_q" value="'.esc_attr($search).'" placeholder="'.esc_attr__('Title, URL, phrase, or rule', self::TD).'"> ';
-        echo '<button class="button" type="submit">'.esc_html__('Filter', self::TD).'</button> ';
+        echo '<label for="beeclear-ilm-filter" class="screen-reader-text">'.esc_html__('Search', 'internal-external-link-manager-premium').'</label>';
+        echo '<input id="beeclear-ilm-filter" type="search" name="ilm_q" value="'.esc_attr($search).'" placeholder="'.esc_attr__('Title, URL, phrase, or rule', 'internal-external-link-manager-premium').'"> ';
+        echo '<button class="button" type="submit">'.esc_html__('Filter', 'internal-external-link-manager-premium').'</button> ';
         if ($search !== ''){
-            echo '<a class="button" href="'.esc_url($base_url).'">'.esc_html__('Reset', self::TD).'</a>';
+            echo '<a class="button" href="'.esc_url($base_url).'">'.esc_html__('Reset', 'internal-external-link-manager-premium').'</a>';
         }
         echo '</form>';
         echo '<div class="beeclear-ilm-overview-meta">';
-        echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', self::TD).'</span>';
+        echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', 'internal-external-link-manager-premium').'</span>';
         if ($pagination_links){
             echo '<span class="pagination-links">'.$pagination_links.'</span>';
         }
@@ -3165,21 +3164,21 @@ JS;
         echo '</div>';
 
         if (empty($paged_rows)){
-            echo '<p>'.esc_html__('No results match your search.', self::TD).'</p>';
+            echo '<p>'.esc_html__('No results match your search.', 'internal-external-link-manager-premium').'</p>';
             return;
         }
 
         echo '<div class="beeclear-ilm-overview-table-wrap">';
         echo '<table id="beeclear-ilm-ext-table" class="widefat striped beeclear-ilm-overview"><thead><tr>';
-        $target_label = $view === 'targets' ? __('Target', self::TD) : ($view === 'sources' ? __('Source', self::TD) : __('External target', self::TD));
+        $target_label = $view === 'targets' ? __('Target', 'internal-external-link-manager-premium') : ($view === 'sources' ? __('Source', 'internal-external-link-manager-premium') : __('External target', 'internal-external-link-manager-premium'));
         echo '<th class="col-target">'.esc_html($target_label).'</th>';
-        echo '<th class="col-phrases">'.esc_html__('# phrases', self::TD).'</th>';
-        $links_label = $view === 'targets' ? __('# inbound links', self::TD) : ($view === 'sources' ? __('# outbound links', self::TD) : __('# links', self::TD));
+        echo '<th class="col-phrases">'.esc_html__('# phrases', 'internal-external-link-manager-premium').'</th>';
+        $links_label = $view === 'targets' ? __('# inbound links', 'internal-external-link-manager-premium') : ($view === 'sources' ? __('# outbound links', 'internal-external-link-manager-premium') : __('# links', 'internal-external-link-manager-premium'));
         echo '<th class="col-inbound">'.esc_html($links_label).'</th>';
-        $middle_label = $view === 'sources' ? __('Targets', self::TD) : __('Sources', self::TD);
+        $middle_label = $view === 'sources' ? __('Targets', 'internal-external-link-manager-premium') : __('Sources', 'internal-external-link-manager-premium');
         echo '<th class="'.esc_attr($view === 'sources' ? 'col-targets' : 'col-sources').'">'.esc_html($middle_label).'</th>';
         if ($view === 'targets' || $view === 'external'){
-            echo '<th class="col-defined">'.esc_html__('Defined phrases', self::TD).'</th>';
+            echo '<th class="col-defined">'.esc_html__('Defined phrases', 'internal-external-link-manager-premium').'</th>';
         }
         echo '</tr></thead><tbody>';
 
@@ -3189,7 +3188,7 @@ JS;
             $edit  = $row['edit'];
 
             $entry_id_attr = esc_attr((string)$row['id']);
-            $btn = '<button type="button" class="button button-small beeclear-ilm-expand" data-entry="'.$entry_id_attr.'" data-view="'.esc_attr($view).'">'.esc_html__('Show', self::TD).'</button>';
+            $btn = '<button type="button" class="button button-small beeclear-ilm-expand" data-entry="'.$entry_id_attr.'" data-view="'.esc_attr($view).'">'.esc_html__('Show', 'internal-external-link-manager-premium').'</button>';
             $plist = '';
             if ($view === 'targets' && !empty($row['phrases'])){
                 $items = array();
@@ -3209,7 +3208,7 @@ JS;
             echo '<tr>';
             echo '<td class="col-target">'.($perma?'<a href="'.esc_url($perma).'" target="_blank" rel="noopener">':'').esc_html($title).($perma?'</a>':'');
             if ($edit){
-                echo ' <a href="'.esc_url($edit).'" class="beeclear-ilm-edit" title="'.esc_attr__('Edit', self::TD).'"><span class="dashicons dashicons-edit"></span></a>';
+                echo ' <a href="'.esc_url($edit).'" class="beeclear-ilm-edit" title="'.esc_attr__('Edit', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-edit"></span></a>';
             }
             echo '</td>';
             echo '<td class="col-phrases">'.(int)$row['phrases_count'].'</td>';
@@ -3234,7 +3233,7 @@ JS;
         if ($pagination_links){
             echo '<div class="tablenav bottom" style="margin: 12px 0;">';
             echo '<div class="tablenav-pages">';
-            echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', self::TD).'</span>';
+            echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', 'internal-external-link-manager-premium').'</span>';
             echo '<span class="pagination-links">'.$pagination_links.'</span>';
             echo '</div>';
             echo '</div>';
@@ -3247,7 +3246,7 @@ JS;
                 $b.prop("disabled",true).text("…");
                 $.post(ajaxurl,{action:"beeclear_ilm_expand_sources", id:id, view:view, _ajax_nonce:"'.wp_create_nonce(self::NONCE).'"}, function(html){
                     box.html(html).data("loaded",true);
-                }).always(function(){ $b.prop("disabled",false).text("'.esc_js(__('Toggle', self::TD)).'"); });
+                }).always(function(){ $b.prop("disabled",false).text("'.esc_js(__('Toggle', 'internal-external-link-manager-premium')).'"); });
             });
         });
         </script>';
@@ -3269,7 +3268,7 @@ JS;
                 $info = $sources[$id];
                 $targets[$target_id] = is_array($info) ? $info : array('count' => (int)$info, 'phrases' => array(), 'contexts' => array());
             }
-            if(empty($targets)){ echo '<em>'.esc_html__('No targets recorded yet.', self::TD).'</em>'; wp_die(); }
+            if(empty($targets)){ echo '<em>'.esc_html__('No targets recorded yet.', 'internal-external-link-manager-premium').'</em>'; wp_die(); }
 
             $popup_registry = array();
             echo '<ul class="ilm-list">';
@@ -3283,7 +3282,7 @@ JS;
                 $contexts_by_phrase = $this->group_contexts_by_phrase($contexts);
 
                 $title_html = $perma ? '<a href="'.esc_url($perma).'" target="_blank" rel="noopener">'.esc_html($t).'</a>' : esc_html($t);
-                $edit_html  = $edit  ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', self::TD).'"><span class="dashicons dashicons-edit"></span></a>' : '';
+                $edit_html  = $edit  ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-edit"></span></a>' : '';
 
                 $details = '';
                 $popups  = '';
@@ -3301,7 +3300,8 @@ JS;
                                 }
                                 $tag_label = '';
                                 if (!empty($ctx['tag'])){
-                                    $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', self::TD), esc_html($ctx['tag'])).'</div>';
+                                    /* translators: %s: HTML tag name where the phrase was found. */
+                                    $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', 'internal-external-link-manager-premium'), esc_html($ctx['tag'])).'</div>';
                                 }
                                 $html_for_popup = $this->format_context_html_for_popup($ctx['html'], $ctx['tag'] ?? '');
                                 $popup_inner .= '<div class="beeclear-ilm-context-fragment">'.$tag_label.'<div class="beeclear-ilm-context-html">'.wp_kses_post($html_for_popup).'</div></div>';
@@ -3312,12 +3312,12 @@ JS;
                             $base_popup_id = 'beeclear-ilm-context-'.$tid.'-'.$id.'-'.md5($ph);
                             $popup_id = $this->unique_popup_id($base_popup_id, $popup_registry);
                             $popup_attr = esc_attr($popup_id);
-                            $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', self::TD).'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', self::TD).'</span></button>';
+                            $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', 'internal-external-link-manager-premium').'</span></button>';
                             if ($has_manual){
-                                $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', self::TD).'" aria-label="'.esc_attr__('Manual link', self::TD).'">'
+                                $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'" aria-label="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'">'
                                     .'<span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>'
-                                    .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', self::TD).'</span>'
-                                    .'<span class="screen-reader-text">'.esc_html__('Manual link', self::TD).'</span>'
+                                    .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', 'internal-external-link-manager-premium').'</span>'
+                                    .'<span class="screen-reader-text">'.esc_html__('Manual link', 'internal-external-link-manager-premium').'</span>'
                                 .'</span>';
                             }
                             if ($popup_id !== ''){
@@ -3343,9 +3343,9 @@ JS;
                 }
             }
 
-            if ($target === null){ echo '<em>'.esc_html__('Target not found.', self::TD).'</em>'; wp_die(); }
+            if ($target === null){ echo '<em>'.esc_html__('Target not found.', 'internal-external-link-manager-premium').'</em>'; wp_die(); }
             $sources = isset($target['sources']) ? $target['sources'] : array();
-            if (empty($sources)){ echo '<em>'.esc_html__('No sources recorded yet.', self::TD).'</em>'; wp_die(); }
+            if (empty($sources)){ echo '<em>'.esc_html__('No sources recorded yet.', 'internal-external-link-manager-premium').'</em>'; wp_die(); }
 
             $popup_registry = array();
             echo '<ul class="ilm-list">';
@@ -3355,7 +3355,7 @@ JS;
                 $edit  = get_edit_post_link($sid);
 
                 $title_html = $perma ? '<a href="'.esc_url($perma).'" target="_blank" rel="noopener">'.esc_html($title).'</a>' : esc_html($title);
-                $edit_html  = $edit ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', self::TD).'"><span class="dashicons dashicons-edit"></span></a>' : '';
+                $edit_html  = $edit ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-edit"></span></a>' : '';
 
                 $phrases = isset($info['phrases']) ? (array) $info['phrases'] : array();
                 $contexts = is_array($info) ? (array)($info['contexts'] ?? array()) : array();
@@ -3370,10 +3370,11 @@ JS;
                             $popup_html = '';
                             $has_manual = !empty($ctx['manual']);
 
-                            $tag_label = '';
-                            if (!empty($ctx['tag'])){
-                                $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', self::TD), esc_html($ctx['tag'])).'</div>';
-                            }
+                        $tag_label = '';
+                        if (!empty($ctx['tag'])){
+                            /* translators: %s: HTML tag name where the phrase was found. */
+                            $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', 'internal-external-link-manager-premium'), esc_html($ctx['tag'])).'</div>';
+                        }
                             $html_for_popup = $this->format_context_html_for_popup($ctx['html'], $ctx['tag'] ?? '');
                             if ($html_for_popup !== ''){
                                 $popup_inner = '<div class="beeclear-ilm-context-fragment">'.$tag_label.'<div class="beeclear-ilm-context-html">'.wp_kses_post($html_for_popup).'</div></div>';
@@ -3383,12 +3384,12 @@ JS;
                                 $base_popup_id = 'beeclear-ilm-context-'.$target['id'].'-'.$sid.'-'.md5($ph.'-'.$ctx_index);
                                 $popup_id = $this->unique_popup_id($base_popup_id, $popup_registry);
                                 $popup_attr = esc_attr($popup_id);
-                                $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', self::TD).'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', self::TD).'</span></button>';
+                                $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', 'internal-external-link-manager-premium').'</span></button>';
                                 if ($has_manual){
-                                    $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', self::TD).'" aria-label="'.esc_attr__('Manual link', self::TD).'">'
+                                    $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'" aria-label="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'">'
                                         .'<span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>'
-                                        .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', self::TD).'</span>'
-                                        .'<span class="screen-reader-text">'.esc_html__('Manual link', self::TD).'</span>'
+                                        .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', 'internal-external-link-manager-premium').'</span>'
+                                        .'<span class="screen-reader-text">'.esc_html__('Manual link', 'internal-external-link-manager-premium').'</span>'
                                     .'</span>';
                                 }
                                 $popup_html = $popup_id !== '' ? '<div id="'.$popup_attr.'" class="beeclear-ilm-context-popup" hidden>'.$popup_inner.'</div>' : '';
@@ -3416,7 +3417,7 @@ JS;
             echo '</ul>';
         } else {
             $sources = isset($map[$id]['sources']) ? $map[$id]['sources'] : array();
-            if(empty($sources)){ echo '<em>'.esc_html__('No sources recorded yet.', self::TD).'</em>'; wp_die(); }
+            if(empty($sources)){ echo '<em>'.esc_html__('No sources recorded yet.', 'internal-external-link-manager-premium').'</em>'; wp_die(); }
 
             $popup_registry = array();
             echo '<ul class="ilm-list">';
@@ -3431,7 +3432,7 @@ JS;
                 $contexts_by_phrase = $this->group_contexts_by_phrase($contexts);
 
                 $title_html = $perma ? '<a href="'.esc_url($perma).'" target="_blank" rel="noopener">'.esc_html($t).'</a>' : esc_html($t);
-                $edit_html  = $edit  ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', self::TD).'"><span class="dashicons dashicons-edit"></span></a>' : '';
+                $edit_html  = $edit  ? ' <a class="beeclear-ilm-edit" href="'.esc_url($edit).'" title="'.esc_attr__('Edit', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-edit"></span></a>' : '';
 
                 // POKAZUJEMY TYLKO KONKRETNE FRAZY (dopasowania), BEZ LICZNIKÓW
                 $details = '';
@@ -3450,7 +3451,8 @@ JS;
                                 }
                                 $tag_label = '';
                                 if (!empty($ctx['tag'])){
-                                    $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', self::TD), esc_html($ctx['tag'])).'</div>';
+                                    /* translators: %s: HTML tag name where the phrase was found. */
+                                    $tag_label = '<div class="beeclear-ilm-context-tag">'.sprintf(esc_html__('Element: %s', 'internal-external-link-manager-premium'), esc_html($ctx['tag'])).'</div>';
                                 }
                                 $html_for_popup = $this->format_context_html_for_popup($ctx['html'], $ctx['tag'] ?? '');
                                 $popup_inner .= '<div class="beeclear-ilm-context-fragment">'.$tag_label.'<div class="beeclear-ilm-context-html">'.wp_kses_post($html_for_popup).'</div></div>';
@@ -3461,12 +3463,12 @@ JS;
                             $base_popup_id = 'beeclear-ilm-context-'.$id.'-'.$sid.'-'.md5($ph);
                             $popup_id = $this->unique_popup_id($base_popup_id, $popup_registry);
                             $popup_attr = esc_attr($popup_id);
-                            $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', self::TD).'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', self::TD).'</span></button>';
+                            $part .= ' <button type="button" class="button-link beeclear-ilm-context-btn" data-target="'.$popup_attr.'" aria-expanded="false" aria-controls="'.$popup_attr.'" title="'.esc_attr__('Show source element', 'internal-external-link-manager-premium').'"><span class="dashicons dashicons-format-chat" aria-hidden="true"></span><span class="screen-reader-text">'.esc_html__('Show source element', 'internal-external-link-manager-premium').'</span></button>';
                             if ($has_manual){
-                                $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', self::TD).'" aria-label="'.esc_attr__('Manual link', self::TD).'">'
+                                $part .= ' <span class="beeclear-ilm-manual-badge" title="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'" aria-label="'.esc_attr__('Manual link', 'internal-external-link-manager-premium').'">'
                                     .'<span class="dashicons dashicons-admin-tools" aria-hidden="true"></span>'
-                                    .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', self::TD).'</span>'
-                                    .'<span class="screen-reader-text">'.esc_html__('Manual link', self::TD).'</span>'
+                                    .'<span class="beeclear-ilm-manual-text">'.esc_html__('manual', 'internal-external-link-manager-premium').'</span>'
+                                    .'<span class="screen-reader-text">'.esc_html__('Manual link', 'internal-external-link-manager-premium').'</span>'
                                 .'</span>';
                             }
                             if ($popup_id !== ''){
@@ -3489,7 +3491,7 @@ JS;
     public function ajax_start_overview_scan(){
         check_ajax_referer(self::NONCE);
         if ( ! current_user_can('manage_options') ) {
-            wp_send_json_error(array('message' => __('Access denied.', self::TD)));
+            wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
         $settings = get_option(self::OPT_SETTINGS, array());
@@ -3498,7 +3500,7 @@ JS;
 
         if ( empty($ids) ) {
             delete_option(self::OPT_OVERVIEW_SCAN);
-            wp_send_json_error(array('message' => __('No public content found to scan.', self::TD)));
+            wp_send_json_error(array('message' => __('No public content found to scan.', 'internal-external-link-manager-premium')));
         }
 
         update_option(self::OPT_LINKMAP, array(), false);
@@ -3512,7 +3514,8 @@ JS;
         );
         update_option(self::OPT_OVERVIEW_SCAN, $state, false);
 
-        $this->log_activity(sprintf(__('Scan started: %d pages queued.', self::TD), count($ids)));
+        /* translators: %d: number of pages queued for the overview scan. */
+        $this->log_activity(sprintf(__('Scan started: %d pages queued.', 'internal-external-link-manager-premium'), count($ids)));
 
         wp_send_json_success(array('total' => count($ids)));
     }
@@ -3520,7 +3523,7 @@ JS;
     public function ajax_step_overview_scan(){
         check_ajax_referer(self::NONCE);
         if ( ! current_user_can('manage_options') ) {
-            wp_send_json_error(array('message' => __('Access denied.', self::TD)));
+            wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
         $batch = isset($_POST['batch']) ? (int) $_POST['batch'] : 5;
@@ -3534,7 +3537,7 @@ JS;
     public function ajax_fetch_logs(){
         check_ajax_referer(self::NONCE);
         if ( ! current_user_can('manage_options') ) {
-            wp_send_json_error(array('message' => __('Access denied.', self::TD)));
+            wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
         $page = isset($_POST['page']) ? (int) $_POST['page'] : 1;
@@ -3564,8 +3567,8 @@ JS;
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
-                echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt. Scan completed.', self::TD).'</p></div>';
-                $this->log_activity(__('Index rebuilt from overview.', self::TD));
+                echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt. Scan completed.', 'internal-external-link-manager-premium').'</p></div>';
+                $this->log_activity(__('Index rebuilt from overview.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -3579,8 +3582,8 @@ JS;
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
-                echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', self::TD).'</p></div>';
-                $this->log_activity(__('Data cleared and index rebuilt from overview.', self::TD));
+                echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
+                $this->log_activity(__('Data cleared and index rebuilt from overview.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -3593,12 +3596,12 @@ JS;
                         if ( $this->last_rebuild_error !== '' ) {
                             echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
                         } else {
-                            echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', self::TD).'</p></div>';
-                            $this->log_activity(__('Database purged and index rebuilt from overview.', self::TD));
+                            echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
+                            $this->log_activity(__('Database purged and index rebuilt from overview.', 'internal-external-link-manager-premium'));
                         }
                 }
 
-        echo '<div class="wrap"><h1>'.esc_html__('Linking overview — targets & sources', self::TD).'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('Linking overview — targets & sources', 'internal-external-link-manager-premium').'</h1>';
         echo $this->render_author_note();
 
         echo '<div class="beeclear-grid">';
@@ -3606,19 +3609,19 @@ JS;
         echo '<div class="ilm-wrap">';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('Linking overview', self::TD).'</h2>';
-        echo '<p class="description">'.esc_html__('Review how phrases map to your targets, how many links point to them, and expand entries to inspect exact source snippets.', self::TD).'</p>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('Linking overview', 'internal-external-link-manager-premium').'</h2>';
+        echo '<p class="description">'.esc_html__('Review how phrases map to your targets, how many links point to them, and expand entries to inspect exact source snippets.', 'internal-external-link-manager-premium').'</p>';
         echo '</div>';
 
         $this->render_overview_table();
        
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>'.esc_html__('How to use this panel', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>'.esc_html__('How to use this panel', 'internal-external-link-manager-premium').'</h2>';
         echo '<ol class="ilm-list">';
-        echo '<li>'.esc_html__('Scan your site from the Settings tab to refresh counters before reviewing results here.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Use the “Show” toggle in Sources to reveal the posts/pages where a phrase was auto-linked.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Click the Edit icon next to a target title to open it and adjust per-post rules or metadata.', self::TD).'</li>';
-        echo '<li>'.esc_html__('If a phrase needs tweaking, edit it directly on the target post and rebuild the index to apply changes.', self::TD).'</li>';
+        echo '<li>'.esc_html__('Scan your site from the Settings tab to refresh counters before reviewing results here.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Use the “Show” toggle in Sources to reveal the posts/pages where a phrase was auto-linked.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Click the Edit icon next to a target title to open it and adjust per-post rules or metadata.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('If a phrase needs tweaking, edit it directly on the target post and rebuild the index to apply changes.', 'internal-external-link-manager-premium').'</li>';
         echo '</ol>';
         echo '</div>';
 
@@ -3635,34 +3638,35 @@ JS;
             $raw = isset($_POST['beeclear_ilm_ext']) ? (array)$_POST['beeclear_ilm_ext'] : array();
             $clean = $this->sanitize_external_rules($raw);
             update_option(self::OPT_EXT_RULES, $clean, false);
-            echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', self::TD).'</p></div>';
+            echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', 'internal-external-link-manager-premium').'</p></div>';
 
             $settings = get_option(self::OPT_SETTINGS, array());
             if ( ! empty($settings['auto_scan_on_external']) ) {
                 $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
-                $this->start_overview_scan_now($pts, __('Auto scan started after external rule save: %d pages queued.', self::TD));
+                /* translators: %d: number of pages queued for the overview scan. */
+                $this->start_overview_scan_now($pts, __('Auto scan started after external rule save: %d pages queued.', 'internal-external-link-manager-premium'));
             }
         }
 
         $rules = get_option(self::OPT_EXT_RULES, array());
         $pts   = get_post_types(array('public'=>true),'objects');
 
-        echo '<div class="wrap"><h1>'.esc_html__('External linking', self::TD).'</h1>';
+        echo '<div class="wrap"><h1>'.esc_html__('External linking', 'internal-external-link-manager-premium').'</h1>';
         echo $this->render_author_note();
         echo '<div class="beeclear-grid">';
         echo '<div class="ilm-wrap">';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('External rules', self::TD).'</h2>';
-        echo '<p class="description">'.esc_html__('Define phrases (or regex) that should be linked to external URLs. Control case-sensitivity (disabled if regex), rel/title/aria/class, per-page limits, and restrict rules to specific post types.', self::TD).'</p>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-admin-links" aria-hidden="true"></span>'.esc_html__('External rules', 'internal-external-link-manager-premium').'</h2>';
+        echo '<p class="description">'.esc_html__('Define phrases (or regex) that should be linked to external URLs. Control case-sensitivity (disabled if regex), rel/title/aria/class, per-page limits, and restrict rules to specific post types.', 'internal-external-link-manager-premium').'</p>';
         echo $this->render_token_tips_html();
         echo '</div>';
         echo '</details>';
         echo '<form method="post"><table class="widefat striped" id="beeclear-ilm-ext-table"><thead><tr>'.
-             '<th>'.esc_html__('Destination & Phrase / Flags', self::TD).'</th>'.
-             '<th>'.esc_html__('Attributes', self::TD).'</th>'.
-             '<th>'.esc_html__('Post types / Exclusions', self::TD).'</th>'.
-             '<th>'.esc_html__('Actions', self::TD).'</th>'.
+             '<th>'.esc_html__('Destination & Phrase / Flags', 'internal-external-link-manager-premium').'</th>'.
+             '<th>'.esc_html__('Attributes', 'internal-external-link-manager-premium').'</th>'.
+             '<th>'.esc_html__('Post types / Exclusions', 'internal-external-link-manager-premium').'</th>'.
+             '<th>'.esc_html__('Actions', 'internal-external-link-manager-premium').'</th>'.
              '</tr></thead><tbody>';
 
         $i=0;
@@ -3700,98 +3704,98 @@ JS;
             echo '<tr>';
             echo '<td class="cell-phrase">'.
                     '<div class="ext-field ext-destination">'.
-                        '<label class="ext-destination-label" for="'.esc_attr($url_id).'">'.esc_html__('Destination URL', self::TD).'</label>'.
+                        '<label class="ext-destination-label" for="'.esc_attr($url_id).'">'.esc_html__('Destination URL', 'internal-external-link-manager-premium').'</label>'.
                         '<input type="url" id="'.esc_attr($url_id).'" name="beeclear_ilm_ext['.$i.'][url]" class="regular-text" value="'.esc_attr($url).'" placeholder="https://example.com">'.
                     '</div>'.
                     '<div class="ext-field ext-phrase">'.
-                        '<label class="ext-phrase-label" for="'.esc_attr($phrase_id).'">'.esc_html__('Phrase or regex', self::TD).'</label>'.
-                        '<input type="text" id="'.esc_attr($phrase_id).'" name="beeclear_ilm_ext['.$i.'][phrase]" class="regular-text" value="'.esc_attr($phrase).'" placeholder="'.esc_attr__('Phrase or regex', self::TD).'">'.
+                        '<label class="ext-phrase-label" for="'.esc_attr($phrase_id).'">'.esc_html__('Phrase or regex', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="'.esc_attr($phrase_id).'" name="beeclear_ilm_ext['.$i.'][phrase]" class="regular-text" value="'.esc_attr($phrase).'" placeholder="'.esc_attr__('Phrase or regex', 'internal-external-link-manager-premium').'">'.
                     '</div>'.
                     '<div class="flags">'.
-                        '<label><input type="checkbox" class="ext-regex" name="beeclear_ilm_ext['.$i.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', self::TD).'</label> '.
-                        '<label><input type="checkbox" class="ext-case" name="beeclear_ilm_ext['.$i.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', self::TD).'</label>'.
+                        '<label><input type="checkbox" class="ext-regex" name="beeclear_ilm_ext['.$i.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
+                        '<label><input type="checkbox" class="ext-case" name="beeclear_ilm_ext['.$i.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
                     '</div>'.
                     '<div class="ext-field ext-context">'.
-                        '<label class="ext-context-label" for="'.esc_attr($context_id).'">'.esc_html__('Context words or regex', self::TD).'</label>'.
-                        '<input type="text" id="'.esc_attr($context_id).'" name="beeclear_ilm_ext['.$i.'][context]" class="regular-text" value="'.esc_attr($context_display).'" placeholder="'.esc_attr__('Additional words required in the same element', self::TD).'">'.
+                        '<label class="ext-context-label" for="'.esc_attr($context_id).'">'.esc_html__('Context words or regex', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="'.esc_attr($context_id).'" name="beeclear_ilm_ext['.$i.'][context]" class="regular-text" value="'.esc_attr($context_display).'" placeholder="'.esc_attr__('Additional words required in the same element', 'internal-external-link-manager-premium').'">'.
                         '<div class="flags">'.
-                            '<label><input type="checkbox" class="ext-context-regex" name="beeclear_ilm_ext['.$i.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', self::TD).'</label> '.
-                            '<label><input type="checkbox" class="ext-context-case" name="beeclear_ilm_ext['.$i.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', self::TD).'</label>'.
+                            '<label><input type="checkbox" class="ext-context-regex" name="beeclear_ilm_ext['.$i.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
+                            '<label><input type="checkbox" class="ext-context-case" name="beeclear_ilm_ext['.$i.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
                         '</div>'.
-                        '<p class="description">'.esc_html__('Supports token syntax (non-regex). Separate multiple entries with commas.', self::TD).'</p>'.
+                        '<p class="description">'.esc_html__('Supports token syntax (non-regex). Separate multiple entries with commas.', 'internal-external-link-manager-premium').'</p>'.
                     '</div>'.
                  '</td>';
             echo '<td class="cell-attrs"><div class="attr-rows">'.
                     '<div class="ar"><label class="ar-label" for="'.esc_attr($rel_id).'">rel</label><div class="ar-field"><input type="text" id="'.esc_attr($rel_id).'" name="beeclear_ilm_ext['.$i.'][rel]" class="regular-text" value="'.esc_attr($rel).'" placeholder="nofollow noopener"></div></div>'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($title_mode_id).'">'.esc_html__('Title', self::TD).'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($title_mode_id).'" name="beeclear_ilm_ext['.$i.'][title_mode]">'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($title_mode_id).'">'.esc_html__('Title', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($title_mode_id).'" name="beeclear_ilm_ext['.$i.'][title_mode]">'.
                         $this->options_html(array('none','phrase','custom'), $title_mode).'</select></div>'.
-                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($title_custom_id).'">'.esc_html__('Custom title', self::TD).'</label><input type="text" id="'.esc_attr($title_custom_id).'" name="beeclear_ilm_ext['.$i.'][title_custom]" class="regular-text" value="'.esc_attr($title_custom).'" placeholder="'.esc_attr__('Custom title', self::TD).'"></div></div></div>'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($aria_mode_id).'">'.esc_html__('Aria-label', self::TD).'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($aria_mode_id).'" name="beeclear_ilm_ext['.$i.'][aria_mode]">'.
+                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($title_custom_id).'">'.esc_html__('Custom title', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($title_custom_id).'" name="beeclear_ilm_ext['.$i.'][title_custom]" class="regular-text" value="'.esc_attr($title_custom).'" placeholder="'.esc_attr__('Custom title', 'internal-external-link-manager-premium').'"></div></div></div>'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($aria_mode_id).'">'.esc_html__('Aria-label', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($aria_mode_id).'" name="beeclear_ilm_ext['.$i.'][aria_mode]">'.
                         $this->options_html(array('none','phrase','custom'), $aria_mode).'</select></div>'.
-                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($aria_custom_id).'">'.esc_html__('Custom aria-label', self::TD).'</label><input type="text" id="'.esc_attr($aria_custom_id).'" name="beeclear_ilm_ext['.$i.'][aria_custom]" class="regular-text" value="'.esc_attr($aria_custom).'" placeholder="'.esc_attr__('Custom aria-label', self::TD).'"></div></div></div>'.
+                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($aria_custom_id).'">'.esc_html__('Custom aria-label', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($aria_custom_id).'" name="beeclear_ilm_ext['.$i.'][aria_custom]" class="regular-text" value="'.esc_attr($aria_custom).'" placeholder="'.esc_attr__('Custom aria-label', 'internal-external-link-manager-premium').'"></div></div></div>'.
                     '<div class="ar"><label class="ar-label" for="'.esc_attr($class_id).'">CSS class</label><div class="ar-field"><input type="text" id="'.esc_attr($class_id).'" name="beeclear_ilm_ext['.$i.'][class]" class="regular-text" value="'.esc_attr($class).'" placeholder="beeclear-ilm-link"></div></div>'.
                  '</div></td>';
             echo '<td class="cell-types">'.
                 '<div class="types-stack">'.
-                    '<div class="max-per-page-field"><label class="max-label" for="'.esc_attr($max_id).'">'.esc_html__('Max/page', self::TD).'</label><input type="number" min="0" id="'.esc_attr($max_id).'" name="beeclear_ilm_ext['.$i.'][max_per_page]" value="'.esc_attr((int)$max_per_page).'"> <span class="desc">'.esc_html__('0 = unlimited', self::TD).'</span></div>'.
+                    '<div class="max-per-page-field"><label class="max-label" for="'.esc_attr($max_id).'">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="'.esc_attr($max_id).'" name="beeclear_ilm_ext['.$i.'][max_per_page]" value="'.esc_attr((int)$max_per_page).'"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'.
                     '<div class="types-checklist">'.$this->post_types_checklist_html('beeclear_ilm_ext['.$i.'][types][]', $types, $pts).'</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-exclude">'.esc_html__('Exclude by post ID', self::TD).'</label>'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'.
                         '<input type="text" id="beeclear-ilm-ext-'.$i.'-exclude" name="beeclear_ilm_ext['.$i.'][exclude_ids]" class="regular-text" value="'.esc_attr($exclude_ids).'" placeholder="e.g. 123, 456">'.
                     '</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-allowed">'.esc_html__('Allowed elements (overrides global skip)', self::TD).'</label>'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'.
                         '<input type="text" id="beeclear-ilm-ext-'.$i.'-allowed" name="beeclear_ilm_ext['.$i.'][allowed_tags]" class="regular-text" value="'.esc_attr($allowed_tags_raw).'" placeholder="p, ul, ol">'.
-                        '<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', self::TD).'</p>'.
+                        '<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', 'internal-external-link-manager-premium').'</p>'.
                     '</div>'.
                 '</div>'.
             '</td>';
-            echo '<td class="cell-actions"><a href="#" class="button ext-delete">'.esc_html__('Remove', self::TD).'</a></td>';
+            echo '<td class="cell-actions"><a href="#" class="button ext-delete">'.esc_html__('Remove', 'internal-external-link-manager-premium').'</a></td>';
             echo '</tr>';
             $i++;
         }
 
         echo '</tbody></table>';
-        echo '<p><a href="#" class="button" id="beeclear-ilm-ext-add">'.esc_html__('Add external rule', self::TD).'</a></p>';
+        echo '<p><a href="#" class="button" id="beeclear-ilm-ext-add">'.esc_html__('Add external rule', 'internal-external-link-manager-premium').'</a></p>';
         wp_nonce_field(self::NONCE, self::NONCE);
-        echo '<p><button class="button button-primary" name="beeclear_ilm_save_external" value="1">'.esc_html__('Save rules', self::TD).'</button></p>';
+        echo '<p><button class="button button-primary" name="beeclear_ilm_save_external" value="1">'.esc_html__('Save rules', 'internal-external-link-manager-premium').'</button></p>';
         echo '</form>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>'.esc_html__('How to use this panel', self::TD).'</h2>';
+        echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-lightbulb" aria-hidden="true"></span>'.esc_html__('How to use this panel', 'internal-external-link-manager-premium').'</h2>';
         echo '<ol class="ilm-list">';
-        echo '<li>'.esc_html__('Add or edit rows to pair a Phrase with a destination URL. Use Phrase helpers like [words] or [string] to cover variable text fragments.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Toggle Regex or Case-sensitive when needed; regex disables case switching.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Adjust rel/title/aria/class attributes, per-page limits, and restrict rules to selected post types.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Click “Save rules” to store changes and apply them across your site.', self::TD).'</li>';
-        echo '<li>'.esc_html__('Review the overview list below to confirm active rules and their targets.', self::TD).'</li>';
+        echo '<li>'.esc_html__('Add or edit rows to pair a Phrase with a destination URL. Use Phrase helpers like [words] or [string] to cover variable text fragments.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Toggle Regex or Case-sensitive when needed; regex disables case switching.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Adjust rel/title/aria/class attributes, per-page limits, and restrict rules to selected post types.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Click “Save rules” to store changes and apply them across your site.', 'internal-external-link-manager-premium').'</li>';
+        echo '<li>'.esc_html__('Review the overview list below to confirm active rules and their targets.', 'internal-external-link-manager-premium').'</li>';
         echo '</ol>';
         echo '</div>';
 
         echo '<script type="text/html" id="beeclear-ilm-ext-types-template">'
             .'<div class="types-stack">'
-                .'<div class="max-per-page-field"><label class="max-label" for="beeclear-ilm-ext-__IDX__-max">'.esc_html__('Max/page', self::TD).'</label><input type="number" min="0" id="beeclear-ilm-ext-__IDX__-max" name="beeclear_ilm_ext[__IDX__][max_per_page]" value="1"> <span class="desc">'.esc_html__('0 = unlimited', self::TD).'</span></div>'
+                .'<div class="max-per-page-field"><label class="max-label" for="beeclear-ilm-ext-__IDX__-max">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="beeclear-ilm-ext-__IDX__-max" name="beeclear_ilm_ext[__IDX__][max_per_page]" value="1"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'
                 .'<div class="types-checklist">'.$this->post_types_checklist_html('beeclear_ilm_ext[__IDX__][types][]', array(), $pts, true).'</div>'
                 .'<div class="field-stack">'
-                    .'<label class="field-label" for="beeclear-ilm-ext-__IDX__-exclude">'.esc_html__('Exclude by post ID', self::TD).'</label>'
+                    .'<label class="field-label" for="beeclear-ilm-ext-__IDX__-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'
                     .'<input type="text" id="beeclear-ilm-ext-__IDX__-exclude" name="beeclear_ilm_ext[__IDX__][exclude_ids]" class="regular-text" placeholder="123, 456">'
                 .'</div>'
                 .'<div class="field-stack">'
-                    .'<label class="field-label" for="beeclear-ilm-ext-__IDX__-allowed">'.esc_html__('Allowed elements (overrides global skip)', self::TD).'</label>'
+                    .'<label class="field-label" for="beeclear-ilm-ext-__IDX__-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'
                     .'<input type="text" id="beeclear-ilm-ext-__IDX__-allowed" name="beeclear_ilm_ext[__IDX__][allowed_tags]" class="regular-text" placeholder="p, ul, ol">'
-                    .'<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', self::TD).'</p>'
+                    .'<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', 'internal-external-link-manager-premium').'</p>'
                 .'</div>'
             .'</div>'
             .'</script>';
 
         if (!empty($rules)){
             echo '<div class="beeclear-card">';
-            echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('External rules overview', self::TD).'</h2>';
+            echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('External rules overview', 'internal-external-link-manager-premium').'</h2>';
             echo '<ol class="ilm-list">';
             foreach($rules as $r){
                 $badge = !empty($r['regex']) ? 'regex' : (!empty($r['case']) ? 'case' : ($this->contains_tokens($r['phrase'] ?? '') ? 'tokens' : ''));
-                $types = empty($r['types']) ? esc_html__('all types', self::TD) : implode(', ', array_map('esc_html', (array)$r['types']));
+                $types = empty($r['types']) ? esc_html__('all types', 'internal-external-link-manager-premium') : implode(', ', array_map('esc_html', (array)$r['types']));
                 $ph = isset($r['phrase']) ? $r['phrase'] : '';
                 $url = isset($r['url']) ? $r['url'] : '';
                 echo '<li><code>'.esc_html($ph).'</code> '.($badge? '['.esc_html($badge).'] ' : '').'→ <a href="'.esc_url($url).'" target="_blank" rel="noopener">'.esc_html($url).'</a> <span style="opacity:.7">('.$types.')</span></li>';
@@ -3886,12 +3890,12 @@ JS;
                     }
                 }
                 $idx = $this->rebuild_index();
-                echo '<div class="notice notice-success"><p>'.esc_html__('Imported successfully and index rebuilt.', self::TD).'</p>';
+                echo '<div class="notice notice-success"><p>'.esc_html__('Imported successfully and index rebuilt.', 'internal-external-link-manager-premium').'</p>';
                 echo $this->render_index_summary_html($this->summarize_index($idx));
                 echo '</div>';
-                $this->log_activity(__('Import finished and index rebuilt.', self::TD));
+                $this->log_activity(__('Import finished and index rebuilt.', 'internal-external-link-manager-premium'));
             } else {
-                echo '<div class="notice notice-error"><p>'.esc_html__('Invalid JSON.', self::TD).'</p></div>';
+                echo '<div class="notice notice-error"><p>'.esc_html__('Invalid JSON.', 'internal-external-link-manager-premium').'</p></div>';
             }
         }
 
@@ -3924,21 +3928,21 @@ JS;
         ?>
         <div class="wrap">
             <div class="ilm-wrap">
-                <h1><?php esc_html_e('Import/Export', self::TD); ?></h1>
+                <h1><?php esc_html_e('Import/Export', 'internal-external-link-manager-premium'); ?></h1>
                 <?php echo $this->render_author_note(); ?>
                 <div class="beeclear-card">
-                    <h2><?php esc_html_e('Export', self::TD); ?></h2>
+                    <h2><?php esc_html_e('Export', 'internal-external-link-manager-premium'); ?></h2>
                     <textarea rows="16" class="large-text code" readonly id="beeclear-ilm-export-json"><?php echo esc_textarea($json); ?></textarea>
-                    <p><button type="button" class="button" id="beeclear-ilm-export-download"><?php esc_html_e('Download JSON file', self::TD); ?></button></p>
+                    <p><button type="button" class="button" id="beeclear-ilm-export-download"><?php esc_html_e('Download JSON file', 'internal-external-link-manager-premium'); ?></button></p>
                 </div>
 
                 <div class="beeclear-card">
-                    <h2><?php esc_html_e('Import', self::TD); ?></h2>
+                    <h2><?php esc_html_e('Import', 'internal-external-link-manager-premium'); ?></h2>
                     <form method="post">
                         <?php wp_nonce_field(self::NONCE, self::NONCE); ?>
                         <p><input type="file" id="beeclear-ilm-import-file" accept="application/json,.json"></p>
-                        <textarea name="beeclear_ilm_json" rows="10" class="large-text code" id="beeclear-ilm-import-json" placeholder="<?php esc_attr_e('Paste JSON here…', self::TD); ?>"></textarea>
-                        <p><button class="button button-primary" name="beeclear_ilm_import" value="1"><?php esc_html_e('Import', self::TD); ?></button></p>
+                        <textarea name="beeclear_ilm_json" rows="10" class="large-text code" id="beeclear-ilm-import-json" placeholder="<?php esc_attr_e('Paste JSON here…', 'internal-external-link-manager-premium'); ?>"></textarea>
+                        <p><button class="button button-primary" name="beeclear_ilm_import" value="1"><?php esc_html_e('Import', 'internal-external-link-manager-premium'); ?></button></p>
                     </form>
                 </div>
             </div>
@@ -3952,14 +3956,14 @@ JS;
         foreach($pts as $pt){
             add_filter("manage_{$pt}_posts_columns", function($cols){
                 if (!is_array($cols)) $cols = array();
-                $cols['beeclear_ilm'] = __('Internal Links (BeeClear)', self::TD);
+                $cols['beeclear_ilm'] = __('Internal Links (BeeClear)', 'internal-external-link-manager-premium');
                 return $cols;
             });
             add_action("manage_{$pt}_posts_custom_column", function($col, $post_id){
                 if ($col !== 'beeclear_ilm') return;
                 $rules = get_post_meta($post_id, self::META_RULES, true);
                 if (empty($rules) || !is_array($rules)){
-                    echo '<span style="opacity:.6">'.esc_html__('— none —', self::TD).'</span>';
+                    echo '<span style="opacity:.6">'.esc_html__('— none —', 'internal-external-link-manager-premium').'</span>';
                 } else {
                     $count = count($rules);
                     $preview_items = array();
@@ -3972,7 +3976,7 @@ JS;
                     echo '<div style="margin-top:2px; max-width:420px; white-space:normal; line-height:1.3">'.implode(', ', $preview_items).( $count>3 ? '…' : '' ).'</div>';
                 }
                 if ( !empty(get_post_meta($post_id, self::META_NO_OUT, true)) ){
-                    echo '<div style="margin-top:4px"><span class="dashicons dashicons-lock" style="vertical-align:middle"></span> <span style="opacity:.8">'.esc_html__('No outgoing links', self::TD).'</span></div>';
+                    echo '<div style="margin-top:4px"><span class="dashicons dashicons-lock" style="vertical-align:middle"></span> <span style="opacity:.8">'.esc_html__('No outgoing links', 'internal-external-link-manager-premium').'</span></div>';
                 }
             }, 10, 2);
         }
