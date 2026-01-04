@@ -112,6 +112,7 @@ class BeeClear_ILM {
 
         add_action('admin_init', array($this,'register_admin_columns'));
 
+        add_action('admin_init', array($this, 'disable_free_version_if_active'));
         add_action('admin_init', array($this, 'maybe_block_free_plugin_activation'));
         add_filter('plugin_action_links_' . self::BASE_PLUGIN, array($this, 'maybe_replace_free_plugin_actions'));
         add_action('admin_notices', array($this, 'render_premium_admin_notices'));
