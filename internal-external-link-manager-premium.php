@@ -1458,14 +1458,14 @@ JS;
             }
             $phrase_label = esc_html__('Phrase or regex', 'internal-external-link-manager-premium');
             $context_label = esc_html__('Context words or regex', 'internal-external-link-manager-premium');
-            $index_attr = esc_attr((int) $i);
+            $index_attr = (int) $i;
             echo '<div class="ilm-row"><span class="handle" aria-hidden="true">☰</span>';
             echo '<div class="ilm-rule-fields">';
             echo '<div class="ilm-field-group">';
             echo '<div class="ilm-field-controls">';
             printf(
                 '<input type="text" name="beeclear_ilm_rules[%1$s][phrase]" value="%2$s" class="regular-text" placeholder="%3$s" aria-label="%4$s">',
-                $index_attr,
+                esc_attr($index_attr),
                 esc_attr($phrase),
                 esc_attr($phrase_label),
                 esc_attr($phrase_label)
@@ -1473,13 +1473,13 @@ JS;
             echo '<div class="ilm-field-flags">';
             printf(
                 '<label><input type="checkbox" class="ilm-regex" name="beeclear_ilm_rules[%1$s][regex]" value="1" %2$s> %3$s</label>',
-                $index_attr,
+                esc_attr($index_attr),
                 checked($regex, true, false),
                 esc_html__('Regex', 'internal-external-link-manager-premium')
             );
             printf(
                 '<label><input type="checkbox" class="ilm-case" name="beeclear_ilm_rules[%1$s][case]" value="1" %2$s> %3$s</label>',
-                $index_attr,
+                esc_attr($index_attr),
                 checked($case, true, false).($regex ? ' disabled' : ''),
                 esc_html__('Case-sensitive', 'internal-external-link-manager-premium')
             );
@@ -1491,7 +1491,7 @@ JS;
             echo '<div class="ilm-field-controls">';
             printf(
                 '<input type="text" name="beeclear_ilm_rules[%1$s][context]" value="%2$s" class="regular-text" placeholder="%3$s" aria-label="%4$s">',
-                $index_attr,
+                esc_attr($index_attr),
                 esc_attr($context_words),
                 esc_attr__('Additional words required in the same element', 'internal-external-link-manager-premium'),
                 esc_attr($context_label)
@@ -1499,13 +1499,13 @@ JS;
             echo '<div class="ilm-field-flags">';
             printf(
                 '<label><input type="checkbox" class="ilm-context-regex" name="beeclear_ilm_rules[%1$s][context_regex]" value="1" %2$s> %3$s</label>',
-                $index_attr,
+                esc_attr($index_attr),
                 checked($context_regex, true, false),
                 esc_html__('Regex', 'internal-external-link-manager-premium')
             );
             printf(
                 '<label><input type="checkbox" class="ilm-context-case" name="beeclear_ilm_rules[%1$s][context_case]" value="1" %2$s> %3$s</label>',
-                $index_attr,
+                esc_attr($index_attr),
                 checked($context_case, true, false).($context_regex ? ' disabled' : ''),
                 esc_html__('Case-sensitive', 'internal-external-link-manager-premium')
             );
@@ -1565,9 +1565,9 @@ JS;
 
         $settings_url = esc_url(admin_url('admin.php?page=beeclear-ilm'));
         $menu_name = esc_html__('Internal & External Link Manager', 'internal-external-link-manager-premium');
-        echo '<hr><p><strong>'.__('Admin menu name:', 'internal-external-link-manager-premium').'</strong> '
+        echo '<hr><p><strong>'.esc_html__('Admin menu name:', 'internal-external-link-manager-premium').'</strong> '
             . '<a href="'.$settings_url.'" target="_blank" rel="noopener noreferrer">'.$menu_name.'</a></p>';
-        echo '<p><strong>'.__('Author:', 'internal-external-link-manager-premium').'</strong> <a href="https://beeclear.pl">BeeClear</a></p>';
+        echo '<p><strong>'.esc_html__('Author:', 'internal-external-link-manager-premium').'</strong> <a href="https://beeclear.pl">BeeClear</a></p>';
     }
 
     public function save_post_rules($post_id){
@@ -2677,7 +2677,7 @@ JS;
 
         echo '<div class="wrap">';
         echo '<h1>'.esc_html__('Internal Link Manager (BeeClear) — Global settings', 'internal-external-link-manager-premium').'</h1>';
-        echo $this->render_author_note();
+        echo wp_kses_post($this->render_author_note());
 
         echo '<div class="beeclear-grid beeclear-grid--with-sidebar">';
 
@@ -2797,7 +2797,7 @@ JS;
 
         echo '<div class="beeclear-card">';
         echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-visibility" aria-hidden="true"></span>'.esc_html__('Last scan summary', 'internal-external-link-manager-premium').'</h2>';
-        echo '<div id="beeclear-ilm-scan-summary">'.$this->render_scan_summary_html().'</div>';
+        echo '<div id="beeclear-ilm-scan-summary">'.wp_kses_post($this->render_scan_summary_html()).'</div>';
         echo '</div>';
 
         echo '<div class="beeclear-card">';
@@ -2823,7 +2823,7 @@ JS;
 
         echo '<div class="beeclear-card">';
         echo '<h2 class="ilm-section-title"><span class="dashicons dashicons-media-text" aria-hidden="true"></span>'.esc_html__('Activity log', 'internal-external-link-manager-premium').'</h2>';
-        echo $this->render_activity_log_html();
+        echo wp_kses_post($this->render_activity_log_html());
         echo '</div>';
 
         echo '</div>';
@@ -3191,7 +3191,7 @@ JS;
         echo '<div class="beeclear-ilm-overview-meta">';
         echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', 'internal-external-link-manager-premium').'</span>';
         if ($pagination_links){
-            echo '<span class="pagination-links">'.$pagination_links.'</span>';
+            echo '<span class="pagination-links">'.wp_kses_post($pagination_links).'</span>';
         }
         echo '</div>';
         echo '</div>';
@@ -3221,7 +3221,7 @@ JS;
             $edit  = $row['edit'];
 
             $entry_id_attr = esc_attr((string)$row['id']);
-            $btn = '<button type="button" class="button button-small beeclear-ilm-expand" data-entry="'.$entry_id_attr.'" data-view="'.esc_attr($view).'">'.esc_html__('Show', 'internal-external-link-manager-premium').'</button>';
+            $btn = '<button type="button" class="button button-small beeclear-ilm-expand" data-entry="'.esc_attr($entry_id_attr).'" data-view="'.esc_attr($view).'">'.esc_html__('Show', 'internal-external-link-manager-premium').'</button>';
             $plist = '';
             if ($view === 'targets' && !empty($row['phrases'])){
                 $items = array();
@@ -3237,7 +3237,7 @@ JS;
                 }
                 $plist = '<div style="max-width:380px; white-space:normal">'.implode(', ', $items).'</div>';
             }
-            $container_id = 'beeclear-ilm-expansion-'.esc_attr($view).'-'.$entry_id_attr;
+            $container_id = 'beeclear-ilm-expansion-'.esc_attr($view).'-'.esc_attr($entry_id_attr);
             echo '<tr>';
             echo '<td class="col-target">'.($perma?'<a href="'.esc_url($perma).'" target="_blank" rel="noopener">':'').esc_html($title).($perma?'</a>':'');
             if ($edit){
@@ -3252,11 +3252,11 @@ JS;
             } else {
                 $link_count = (int)($row['link_count'] ?? 0);
             }
-            echo '<td class="col-inbound">'.$link_count.'</td>';
+            echo '<td class="col-inbound">'.esc_html($link_count).'</td>';
             $col_class = $view === 'sources' ? 'col-targets' : 'col-sources';
-            echo '<td class="'.$col_class.'">'.$btn.'<div id="'.$container_id.'" style="margin-top:6px"></div></td>';
+            echo '<td class="'.esc_attr($col_class).'">'.wp_kses_post($btn).'<div id="'.esc_attr($container_id).'" style="margin-top:6px"></div></td>';
             if ($view === 'targets' || $view === 'external'){
-                echo '<td class="col-defined">'.$plist.'</td>';
+                echo '<td class="col-defined">'.wp_kses_post($plist).'</td>';
             }
             echo '</tr>';
         }
@@ -3267,7 +3267,7 @@ JS;
             echo '<div class="tablenav bottom" style="margin: 12px 0;">';
             echo '<div class="tablenav-pages">';
             echo '<span class="displaying-num">'.intval($total_items).' '.esc_html__('items', 'internal-external-link-manager-premium').'</span>';
-            echo '<span class="pagination-links">'.$pagination_links.'</span>';
+            echo '<span class="pagination-links">'.wp_kses_post($pagination_links).'</span>';
             echo '</div>';
             echo '</div>';
         }
@@ -3277,7 +3277,7 @@ JS;
                 var $b=$(this), id=$b.data("entry"), view=$b.data("view"), box=$("#beeclear-ilm-expansion-"+view+"-"+id);
                 if(box.data("loaded")){ box.toggle(); return; }
                 $b.prop("disabled",true).text("…");
-                $.post(ajaxurl,{action:"beeclear_ilm_expand_sources", id:id, view:view, _ajax_nonce:"'.wp_create_nonce(self::NONCE).'"}, function(html){
+                $.post(ajaxurl,{action:"beeclear_ilm_expand_sources", id:id, view:view, _ajax_nonce:"'.esc_js(wp_create_nonce(self::NONCE)).'"}, function(html){
                     box.html(html).data("loaded",true);
                 }).always(function(){ $b.prop("disabled",false).text("'.esc_js(__('Toggle', 'internal-external-link-manager-premium')).'"); });
             });
@@ -3363,7 +3363,7 @@ JS;
                     $details = implode(', ', $parts);
                 }
 
-                echo '<li class="beeclear-ilm-source-item">'.$title_html.$edit_html.($details !== '' ? ' — '.$details : '').$popups.'</li>';
+                echo '<li class="beeclear-ilm-source-item">'.wp_kses_post($title_html).wp_kses_post($edit_html).($details !== '' ? ' — '.wp_kses_post($details) : '').wp_kses_post($popups).'</li>';
             }
             echo '</ul>';
         } elseif ($view === 'external') {
@@ -3444,7 +3444,7 @@ JS;
                 foreach ($list_rows as $row_details){
                     $details = $row_details['details'];
                     $popup_html = $row_details['popup'];
-                    echo '<li class="beeclear-ilm-source-item">'.$title_html.$edit_html.($details !== '' ? ' — '.$details : '').$popup_html.'</li>';
+                    echo '<li class="beeclear-ilm-source-item">'.wp_kses_post($title_html).wp_kses_post($edit_html).($details !== '' ? ' — '.wp_kses_post($details) : '').wp_kses_post($popup_html).'</li>';
                 }
             }
             echo '</ul>';
@@ -3514,7 +3514,7 @@ JS;
                     $details = implode(', ', $parts);
                 }
 
-                echo '<li class="beeclear-ilm-source-item">'.$title_html.$edit_html.($details !== '' ? ' — '.$details : '').$popups.'</li>';
+                echo '<li class="beeclear-ilm-source-item">'.wp_kses_post($title_html).wp_kses_post($edit_html).($details !== '' ? ' — '.wp_kses_post($details) : '').wp_kses_post($popups).'</li>';
             }
             echo '</ul>';
         }
@@ -3723,62 +3723,64 @@ JS;
             $types        = (array)($r['types'] ?? array());
             $exclude_ids  = implode(', ', array_map('intval', (array)($r['exclude_ids'] ?? array())));
 
-            $url_id          = 'beeclear-ilm-ext-'.$i.'-url';
-            $phrase_id       = 'beeclear-ilm-ext-'.$i.'-phrase';
-            $context_id      = 'beeclear-ilm-ext-'.$i.'-context';
-            $rel_id          = 'beeclear-ilm-ext-'.$i.'-rel';
-            $title_mode_id   = 'beeclear-ilm-ext-'.$i.'-title-mode';
-            $title_custom_id = 'beeclear-ilm-ext-'.$i.'-title-custom';
-            $aria_mode_id    = 'beeclear-ilm-ext-'.$i.'-aria-mode';
-            $aria_custom_id  = 'beeclear-ilm-ext-'.$i.'-aria-custom';
-            $class_id        = 'beeclear-ilm-ext-'.$i.'-class';
-            $max_id          = 'beeclear-ilm-ext-'.$i.'-max';
+            $i_attr = esc_attr((string) $i);
+
+            $url_id          = 'beeclear-ilm-ext-'.$i_attr.'-url';
+            $phrase_id       = 'beeclear-ilm-ext-'.$i_attr.'-phrase';
+            $context_id      = 'beeclear-ilm-ext-'.$i_attr.'-context';
+            $rel_id          = 'beeclear-ilm-ext-'.$i_attr.'-rel';
+            $title_mode_id   = 'beeclear-ilm-ext-'.$i_attr.'-title-mode';
+            $title_custom_id = 'beeclear-ilm-ext-'.$i_attr.'-title-custom';
+            $aria_mode_id    = 'beeclear-ilm-ext-'.$i_attr.'-aria-mode';
+            $aria_custom_id  = 'beeclear-ilm-ext-'.$i_attr.'-aria-custom';
+            $class_id        = 'beeclear-ilm-ext-'.$i_attr.'-class';
+            $max_id          = 'beeclear-ilm-ext-'.$i_attr.'-max';
 
             echo '<tr>';
             echo '<td class="cell-phrase">'.
                     '<div class="ext-field ext-destination">'.
                         '<label class="ext-destination-label" for="'.esc_attr($url_id).'">'.esc_html__('Destination URL', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="url" id="'.esc_attr($url_id).'" name="beeclear_ilm_ext['.$i.'][url]" class="regular-text" value="'.esc_attr($url).'" placeholder="https://example.com">'.
+                        '<input type="url" id="'.esc_attr($url_id).'" name="beeclear_ilm_ext['.$i_attr.'][url]" class="regular-text" value="'.esc_attr($url).'" placeholder="https://example.com">'.
                     '</div>'.
                     '<div class="ext-field ext-phrase">'.
                         '<label class="ext-phrase-label" for="'.esc_attr($phrase_id).'">'.esc_html__('Phrase or regex', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="'.esc_attr($phrase_id).'" name="beeclear_ilm_ext['.$i.'][phrase]" class="regular-text" value="'.esc_attr($phrase).'" placeholder="'.esc_attr__('Phrase or regex', 'internal-external-link-manager-premium').'">'.
+                        '<input type="text" id="'.esc_attr($phrase_id).'" name="beeclear_ilm_ext['.$i_attr.'][phrase]" class="regular-text" value="'.esc_attr($phrase).'" placeholder="'.esc_attr__('Phrase or regex', 'internal-external-link-manager-premium').'">'.
                     '</div>'.
                     '<div class="flags">'.
-                        '<label><input type="checkbox" class="ext-regex" name="beeclear_ilm_ext['.$i.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
-                        '<label><input type="checkbox" class="ext-case" name="beeclear_ilm_ext['.$i.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
+                        '<label><input type="checkbox" class="ext-regex" name="beeclear_ilm_ext['.$i_attr.'][regex]" value="1" '.checked($regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
+                        '<label><input type="checkbox" class="ext-case" name="beeclear_ilm_ext['.$i_attr.'][case]" value="1" '.checked($case,true,false).($regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
                     '</div>'.
                     '<div class="ext-field ext-context">'.
                         '<label class="ext-context-label" for="'.esc_attr($context_id).'">'.esc_html__('Context words or regex', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="'.esc_attr($context_id).'" name="beeclear_ilm_ext['.$i.'][context]" class="regular-text" value="'.esc_attr($context_display).'" placeholder="'.esc_attr__('Additional words required in the same element', 'internal-external-link-manager-premium').'">'.
+                        '<input type="text" id="'.esc_attr($context_id).'" name="beeclear_ilm_ext['.$i_attr.'][context]" class="regular-text" value="'.esc_attr($context_display).'" placeholder="'.esc_attr__('Additional words required in the same element', 'internal-external-link-manager-premium').'">'.
                         '<div class="flags">'.
-                            '<label><input type="checkbox" class="ext-context-regex" name="beeclear_ilm_ext['.$i.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
-                            '<label><input type="checkbox" class="ext-context-case" name="beeclear_ilm_ext['.$i.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
+                            '<label><input type="checkbox" class="ext-context-regex" name="beeclear_ilm_ext['.$i_attr.'][context_regex]" value="1" '.checked($context_regex,true,false).'> '.esc_html__('Regex', 'internal-external-link-manager-premium').'</label> '.
+                            '<label><input type="checkbox" class="ext-context-case" name="beeclear_ilm_ext['.$i_attr.'][context_case]" value="1" '.checked($context_case,true,false).($context_regex?' disabled':'').'> '.esc_html__('Case-sensitive', 'internal-external-link-manager-premium').'</label>'.
                         '</div>'.
                         '<p class="description">'.esc_html__('Supports token syntax (non-regex). Separate multiple entries with commas.', 'internal-external-link-manager-premium').'</p>'.
                     '</div>'.
                  '</td>';
             echo '<td class="cell-attrs"><div class="attr-rows">'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($rel_id).'">rel</label><div class="ar-field"><input type="text" id="'.esc_attr($rel_id).'" name="beeclear_ilm_ext['.$i.'][rel]" class="regular-text" value="'.esc_attr($rel).'" placeholder="nofollow noopener"></div></div>'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($title_mode_id).'">'.esc_html__('Title', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($title_mode_id).'" name="beeclear_ilm_ext['.$i.'][title_mode]">'.
-                        $this->options_html(array('none','phrase','custom'), $title_mode).'</select></div>'.
-                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($title_custom_id).'">'.esc_html__('Custom title', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($title_custom_id).'" name="beeclear_ilm_ext['.$i.'][title_custom]" class="regular-text" value="'.esc_attr($title_custom).'" placeholder="'.esc_attr__('Custom title', 'internal-external-link-manager-premium').'"></div></div></div>'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($aria_mode_id).'">'.esc_html__('Aria-label', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($aria_mode_id).'" name="beeclear_ilm_ext['.$i.'][aria_mode]">'.
-                        $this->options_html(array('none','phrase','custom'), $aria_mode).'</select></div>'.
-                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($aria_custom_id).'">'.esc_html__('Custom aria-label', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($aria_custom_id).'" name="beeclear_ilm_ext['.$i.'][aria_custom]" class="regular-text" value="'.esc_attr($aria_custom).'" placeholder="'.esc_attr__('Custom aria-label', 'internal-external-link-manager-premium').'"></div></div></div>'.
-                    '<div class="ar"><label class="ar-label" for="'.esc_attr($class_id).'">CSS class</label><div class="ar-field"><input type="text" id="'.esc_attr($class_id).'" name="beeclear_ilm_ext['.$i.'][class]" class="regular-text" value="'.esc_attr($class).'" placeholder="beeclear-ilm-link"></div></div>'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($rel_id).'">rel</label><div class="ar-field"><input type="text" id="'.esc_attr($rel_id).'" name="beeclear_ilm_ext['.$i_attr.'][rel]" class="regular-text" value="'.esc_attr($rel).'" placeholder="nofollow noopener"></div></div>'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($title_mode_id).'">'.esc_html__('Title', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($title_mode_id).'" name="beeclear_ilm_ext['.$i_attr.'][title_mode]">'.
+                        wp_kses_post($this->options_html(array('none','phrase','custom'), $title_mode)).'</select></div>'.
+                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($title_custom_id).'">'.esc_html__('Custom title', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($title_custom_id).'" name="beeclear_ilm_ext['.$i_attr.'][title_custom]" class="regular-text" value="'.esc_attr($title_custom).'" placeholder="'.esc_attr__('Custom title', 'internal-external-link-manager-premium').'"></div></div></div>'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($aria_mode_id).'">'.esc_html__('Aria-label', 'internal-external-link-manager-premium').'</label><div class="ar-field"><div class="inline-field"><select id="'.esc_attr($aria_mode_id).'" name="beeclear_ilm_ext['.$i_attr.'][aria_mode]">'.
+                        wp_kses_post($this->options_html(array('none','phrase','custom'), $aria_mode)).'</select></div>'.
+                        '<div class="inline-field"><label class="screen-reader-text" for="'.esc_attr($aria_custom_id).'">'.esc_html__('Custom aria-label', 'internal-external-link-manager-premium').'</label><input type="text" id="'.esc_attr($aria_custom_id).'" name="beeclear_ilm_ext['.$i_attr.'][aria_custom]" class="regular-text" value="'.esc_attr($aria_custom).'" placeholder="'.esc_attr__('Custom aria-label', 'internal-external-link-manager-premium').'"></div></div></div>'.
+                    '<div class="ar"><label class="ar-label" for="'.esc_attr($class_id).'">CSS class</label><div class="ar-field"><input type="text" id="'.esc_attr($class_id).'" name="beeclear_ilm_ext['.$i_attr.'][class]" class="regular-text" value="'.esc_attr($class).'" placeholder="beeclear-ilm-link"></div></div>'.
                  '</div></td>';
             echo '<td class="cell-types">'.
                 '<div class="types-stack">'.
-                    '<div class="max-per-page-field"><label class="max-label" for="'.esc_attr($max_id).'">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="'.esc_attr($max_id).'" name="beeclear_ilm_ext['.$i.'][max_per_page]" value="'.esc_attr((int)$max_per_page).'"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'.
-                    '<div class="types-checklist">'.$this->post_types_checklist_html('beeclear_ilm_ext['.$i.'][types][]', $types, $pts).'</div>'.
+                    '<div class="max-per-page-field"><label class="max-label" for="'.esc_attr($max_id).'">'.esc_html__('Max/page', 'internal-external-link-manager-premium').'</label><input type="number" min="0" id="'.esc_attr($max_id).'" name="beeclear_ilm_ext['.$i_attr.'][max_per_page]" value="'.esc_attr((int)$max_per_page).'"> <span class="desc">'.esc_html__('0 = unlimited', 'internal-external-link-manager-premium').'</span></div>'.
+                    '<div class="types-checklist">'.wp_kses_post($this->post_types_checklist_html('beeclear_ilm_ext['.$i_attr.'][types][]', $types, $pts)).'</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="beeclear-ilm-ext-'.$i.'-exclude" name="beeclear_ilm_ext['.$i.'][exclude_ids]" class="regular-text" value="'.esc_attr($exclude_ids).'" placeholder="e.g. 123, 456">'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.$i_attr.'-exclude">'.esc_html__('Exclude by post ID', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="beeclear-ilm-ext-'.$i_attr.'-exclude" name="beeclear_ilm_ext['.$i_attr.'][exclude_ids]" class="regular-text" value="'.esc_attr($exclude_ids).'" placeholder="e.g. 123, 456">'.
                     '</div>'.
                     '<div class="field-stack">'.
-                        '<label class="field-label" for="beeclear-ilm-ext-'.$i.'-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'.
-                        '<input type="text" id="beeclear-ilm-ext-'.$i.'-allowed" name="beeclear_ilm_ext['.$i.'][allowed_tags]" class="regular-text" value="'.esc_attr($allowed_tags_raw).'" placeholder="p, ul, ol">'.
+                        '<label class="field-label" for="beeclear-ilm-ext-'.$i_attr.'-allowed">'.esc_html__('Allowed elements (overrides global skip)', 'internal-external-link-manager-premium').'</label>'.
+                        '<input type="text" id="beeclear-ilm-ext-'.$i_attr.'-allowed" name="beeclear_ilm_ext['.$i_attr.'][allowed_tags]" class="regular-text" value="'.esc_attr($allowed_tags_raw).'" placeholder="p, ul, ol">'.
                         '<p class="description">'.esc_html__('Comma-separated tag names. Leave empty to follow global “Skip elements (EXTERNAL)” setting.', 'internal-external-link-manager-premium').'</p>'.
                     '</div>'.
                 '</div>'.
