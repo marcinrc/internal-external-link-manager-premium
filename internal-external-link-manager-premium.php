@@ -231,7 +231,7 @@ class BeeClear_ILM {
                 } while ( !empty($ids) && count($ids) === $batch );
             } catch (\Throwable $e) {
                 if ( defined('WP_DEBUG') && WP_DEBUG ) {
-                    error_log('[BeeClear ILM] Migration 1.4.0 failed: ' . $e->getMessage());
+                    $this->log_activity('[BeeClear ILM] Migration 1.4.0 failed: ' . $e->getMessage());
                 }
                 update_option(self::OPT_DBVER, '1.4.0-failed', false);
                 return;
@@ -1574,7 +1574,8 @@ JS;
         if ( defined('DOING_AUTOSAVE') && DOING_AUTOSAVE ) return;
         if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) return;
 
-        if ( ! isset($_POST[self::NONCE]) || ! wp_verify_nonce($_POST[self::NONCE], self::NONCE) ) return;
+        $nonce = isset($_POST[self::NONCE]) ? sanitize_text_field(wp_unslash($_POST[self::NONCE])) : '';
+        if ( $nonce === '' || ! wp_verify_nonce($nonce, self::NONCE) ) return;
         if ( ! current_user_can('edit_post', $post_id) ) return;
 
         if ( empty($_POST['beeclear_ilm_rules_present']) ) return;
@@ -1607,10 +1608,10 @@ JS;
         if ( ! is_array($current_rules) ) $current_rules = array();
 
         $current_limit_meta = get_post_meta($post_id, self::META_MAX_PER_TARGET, true);
-        $limit_raw = isset($_POST['beeclear_ilm_max_per_target']) ? trim((string) wp_unslash($_POST['beeclear_ilm_max_per_target'])) : '';
+        $limit_raw = isset($_POST['beeclear_ilm_max_per_target']) ? sanitize_text_field(trim((string) wp_unslash($_POST['beeclear_ilm_max_per_target']))) : '';
         $limit_changed = false;
         $current_priority_meta = get_post_meta($post_id, self::META_TARGET_PRIORITY, true);
-        $priority_raw = isset($_POST['beeclear_ilm_target_priority']) ? trim((string) wp_unslash($_POST['beeclear_ilm_target_priority'])) : '';
+        $priority_raw = isset($_POST['beeclear_ilm_target_priority']) ? sanitize_text_field(trim((string) wp_unslash($_POST['beeclear_ilm_target_priority']))) : '';
         $priority_changed = false;
         if ($limit_raw === '') {
             if ($current_limit_meta !== '') {
@@ -1658,7 +1659,7 @@ JS;
             return;
         }
 
-        $raw_input = $_POST['beeclear_ilm_rules'];
+        $raw_input = isset($_POST['beeclear_ilm_rules']) ? wp_unslash($_POST['beeclear_ilm_rules']) : array();
         if ( is_string($raw_input) ) {
             $decoded = json_decode(wp_unslash($raw_input), true);
             $raw = is_array($decoded) ? $decoded : array();
@@ -3010,12 +3011,14 @@ JS;
         $map   = get_option(self::OPT_LINKMAP, array());
 
         $allowed_views = array('targets', 'sources', 'external');
-        $view_param = isset($_GET['ilm_view']) ? (string) $_GET['ilm_view'] : 'targets';
+        $nonce_valid = isset($_GET['_wpnonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), self::NONCE);
+        $view_param = $nonce_valid && isset($_GET['ilm_view']) ? sanitize_text_field(wp_unslash($_GET['ilm_view'])) : 'targets';
         $view = in_array($view_param, $allowed_views, true) ? $view_param : 'targets';
         $per_page = 50;
-        $page = isset($_GET['ilm_page']) ? max(1, (int) $_GET['ilm_page']) : 1;
-        $search_raw = isset($_GET['ilm_q']) ? (string) $_GET['ilm_q'] : '';
-        $search = sanitize_text_field(wp_unslash($search_raw));
+        $page_raw = $nonce_valid && isset($_GET['ilm_page']) ? sanitize_text_field(wp_unslash($_GET['ilm_page'])) : 1;
+        $page = max(1, (int) $page_raw);
+        $search_raw = $nonce_valid && isset($_GET['ilm_q']) ? wp_unslash($_GET['ilm_q']) : '';
+        $search = sanitize_text_field($search_raw);
         $search_lower = function_exists('mb_strtolower') ? mb_strtolower($search, 'UTF-8') : strtolower($search);
 
         $phrases_per_target = array();
@@ -3152,7 +3155,8 @@ JS;
         $offset = ($page - 1) * $per_page;
         $paged_rows = array_slice($rows, $offset, $per_page);
 
-        $base_args = array('page' => 'beeclear-ilm-internal-overview', 'ilm_view' => $view);
+        $nonce_param = wp_create_nonce(self::NONCE);
+        $base_args = array('page' => 'beeclear-ilm-internal-overview', 'ilm_view' => $view, '_wpnonce' => $nonce_param);
         if ($search !== '') {
             $base_args['ilm_q'] = $search;
         }
@@ -3168,9 +3172,9 @@ JS;
             'add_args'  => false,
         ));
 
-        $toggle_target_url = add_query_arg(array_merge($base_args, array('ilm_view' => 'targets', 'ilm_page' => 1)), admin_url('admin.php'));
-        $toggle_source_url = add_query_arg(array_merge($base_args, array('ilm_view' => 'sources', 'ilm_page' => 1)), admin_url('admin.php'));
-        $toggle_external_url = add_query_arg(array_merge($base_args, array('ilm_view' => 'external', 'ilm_page' => 1)), admin_url('admin.php'));
+        $toggle_target_url = wp_nonce_url(add_query_arg(array_merge($base_args, array('ilm_view' => 'targets', 'ilm_page' => 1)), admin_url('admin.php')), self::NONCE);
+        $toggle_source_url = wp_nonce_url(add_query_arg(array_merge($base_args, array('ilm_view' => 'sources', 'ilm_page' => 1)), admin_url('admin.php')), self::NONCE);
+        $toggle_external_url = wp_nonce_url(add_query_arg(array_merge($base_args, array('ilm_view' => 'external', 'ilm_page' => 1)), admin_url('admin.php')), self::NONCE);
 
         echo '<div class="beeclear-ilm-overview-controls">';
         echo '<div class="beeclear-ilm-view-toggle" role="group" aria-label="'.esc_attr__('Change overview layout', 'internal-external-link-manager-premium').'">';
@@ -3181,6 +3185,7 @@ JS;
         echo '<form method="get" class="beeclear-ilm-filter">';
         echo '<input type="hidden" name="page" value="'.esc_attr('beeclear-ilm-internal-overview').'">';
         echo '<input type="hidden" name="ilm_view" value="'.esc_attr($view).'">';
+        echo '<input type="hidden" name="_wpnonce" value="'.esc_attr($nonce_param).'">';
         echo '<label for="beeclear-ilm-filter" class="screen-reader-text">'.esc_html__('Search', 'internal-external-link-manager-premium').'</label>';
         echo '<input id="beeclear-ilm-filter" type="search" name="ilm_q" value="'.esc_attr($search).'" placeholder="'.esc_attr__('Title, URL, phrase, or rule', 'internal-external-link-manager-premium').'"> ';
         echo '<button class="button" type="submit">'.esc_html__('Filter', 'internal-external-link-manager-premium').'</button> ';
@@ -3289,7 +3294,7 @@ JS;
         check_ajax_referer(self::NONCE);
         if ( ! current_user_can('manage_options') ) wp_die();
         $raw_id = isset($_POST['id']) ? wp_unslash($_POST['id']) : '';
-        $view_param = isset($_POST['view']) ? (string) $_POST['view'] : 'targets';
+        $view_param = isset($_POST['view']) ? sanitize_text_field(wp_unslash($_POST['view'])) : 'targets';
         $view = in_array($view_param, array('targets','sources','external'), true) ? $view_param : 'targets';
         $id = ($view === 'external') ? sanitize_text_field($raw_id) : (int) $raw_id;
         $map = get_option(self::OPT_LINKMAP, array());
@@ -3559,7 +3564,8 @@ JS;
             wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
-        $batch = isset($_POST['batch']) ? (int) $_POST['batch'] : 5;
+        $batch_raw = isset($_POST['batch']) ? sanitize_text_field(wp_unslash($_POST['batch'])) : 5;
+        $batch = (int) $batch_raw;
         $result = $this->process_overview_scan_batch($batch);
         if ( ! empty($result['done']) ) {
             $result['summary_html'] = $this->render_scan_summary_html();
@@ -3573,12 +3579,14 @@ JS;
             wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
-        $page = isset($_POST['page']) ? (int) $_POST['page'] : 1;
+        $page_raw = isset($_POST['page']) ? sanitize_text_field(wp_unslash($_POST['page'])) : 1;
+        $page = (int) $page_raw;
         $per_page = 50;
         $data = $this->get_activity_log_page($page, $per_page);
         $total_pages = max(1, (int) ceil(($data['total'] ?: 0) / $per_page));
         $page = min(max(1, $page), $total_pages);
-        if ($page !== (int) ($_POST['page'] ?? 1)) {
+        $original_page = isset($_POST['page']) ? (int) sanitize_text_field(wp_unslash($_POST['page'])) : 1;
+        if ($page !== $original_page) {
             $data = $this->get_activity_log_page($page, $per_page);
         }
 
@@ -3668,7 +3676,7 @@ JS;
         if ( ! current_user_can('manage_options') ) return;
 
         if( isset($_POST['beeclear_ilm_save_external']) && check_admin_referer(self::NONCE, self::NONCE) ){
-            $raw = isset($_POST['beeclear_ilm_ext']) ? (array)$_POST['beeclear_ilm_ext'] : array();
+            $raw = isset($_POST['beeclear_ilm_ext']) ? (array) wp_unslash($_POST['beeclear_ilm_ext']) : array();
             $clean = $this->sanitize_external_rules($raw);
             update_option(self::OPT_EXT_RULES, $clean, false);
             echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', 'internal-external-link-manager-premium').'</p></div>';
@@ -3895,7 +3903,8 @@ JS;
         if ( ! current_user_can('manage_options') ) return;
 
         if(isset($_POST['beeclear_ilm_import']) && check_admin_referer(self::NONCE, self::NONCE)){
-            $json = isset($_POST['beeclear_ilm_json']) ? wp_unslash($_POST['beeclear_ilm_json']) : '';
+            $json_raw = isset($_POST['beeclear_ilm_json']) ? wp_unslash($_POST['beeclear_ilm_json']) : '';
+            $json = sanitize_textarea_field($json_raw);
             $data = json_decode($json, true);
             if(is_array($data)){
                 if(isset($data['settings'])) update_option(self::OPT_SETTINGS, $this->sanitize_settings($data['settings']), false);
