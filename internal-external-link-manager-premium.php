@@ -3676,7 +3676,7 @@ JS;
         if ( ! current_user_can('manage_options') ) return;
 
         if( isset($_POST['beeclear_ilm_save_external']) && check_admin_referer(self::NONCE, self::NONCE) ){
-            $raw_ext = isset($_POST['beeclear_ilm_ext']) ? wp_unslash($_POST['beeclear_ilm_ext']) : array();
+            $raw_ext = isset($_POST['beeclear_ilm_ext']) ? wp_unslash( $_POST['beeclear_ilm_ext'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized in sanitize_external_rules().
             $clean = $this->sanitize_external_rules( is_array($raw_ext) ? $raw_ext : array() );
             update_option(self::OPT_EXT_RULES, $clean, false);
             echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', 'internal-external-link-manager-premium').'</p></div>';
