@@ -1256,9 +1256,9 @@ JS;
             .wrap .form-table td .description, .wrap .form-table td .inline-help{display:block;opacity:.75;line-height:1.2}
             .wrap .form-table td input.regular-text,
             .wrap .form-table td select{max-width:400px;width: 100%;}
-                        .wrap .form-table td textarea{max-width:100%}
+            .wrap .form-table td textarea{max-width:100%}
             .wrap .form-table td input[type="number"]{width:140px;}
-
+			
             /* Inline tips */
             .beeclear-inline-info{display:flex;gap:12px;align-items:flex-start;border:1px solid #dfe4f2;border-left:4px solid #3858e9;border-radius:12px;padding:12px 14px;background:linear-gradient(120deg,#f7f9ff,#ffffff);box-shadow:0 8px 20px rgba(0,0,0,.05);margin:12px 0;}
             .beeclear-inline-info__icon{width:34px;height:34px;border-radius:10px;background:#ebf0ff;display:flex;align-items:center;justify-content:center;color:#3858e9;flex-shrink:0;}
@@ -1274,6 +1274,7 @@ JS;
             @media (min-width: 992px){
                 .beeclear-grid--with-sidebar{grid-template-columns:2fr 1fr;gap:20px}
             }
+			.beeclear-grid p.submit{margin: 0px;padding: 0px;}
             .beeclear-card{background:#fff;border:1px solid #e5e5e5;border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);max-width:100%}
             .beeclear-card h2{margin-top:0}
             .beeclear-actions{display:flex;gap:12px;flex-direction:column;align-items:flex-start;margin:6px 0 0;width:100%}
