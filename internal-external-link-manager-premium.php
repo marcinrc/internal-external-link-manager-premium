@@ -1401,11 +1401,9 @@ JS;
             .beeclear-ilm-overview th,.beeclear-ilm-overview td{padding:12px 10px}
             .beeclear-ilm-overview th{background:#f8fafc;font-weight:600;text-align:left}
             .beeclear-ilm-overview td{vertical-align:top}
-            .beeclear-ilm-overview tr+tr td{border-top:1px solid #edf0f3}
-            .beeclear-ilm-overview .col-target{min-width:220px}
-            .beeclear-ilm-overview .col-phrases,.beeclear-ilm-overview .col-inbound{width:120px;white-space:nowrap}
-            .beeclear-ilm-overview .col-sources,.beeclear-ilm-overview .col-targets{width:150px;white-space:nowrap}
-            .beeclear-ilm-overview .col-defined{min-width:240px}
+            .beeclear-ilm-overview tr+tr td{border-top:1px solid #edf0f3}            
+            .beeclear-ilm-overview .col-phrases,.beeclear-ilm-overview .col-inbound{white-space:nowrap}
+            .beeclear-ilm-overview .col-sources,.beeclear-ilm-overview .col-targets{white-space:nowrap}            
             @media (max-width:782px){
                 .beeclear-ilm-overview th,.beeclear-ilm-overview td{padding:10px 8px}
                 .beeclear-ilm-overview .col-phrases,.beeclear-ilm-overview .col-inbound,.beeclear-ilm-overview .col-sources,.beeclear-ilm-overview .col-targets{width:auto}
@@ -1424,7 +1422,7 @@ JS;
             .beeclear-ilm-context-html{max-height:none;overflow:visible;white-space:normal;word-break:break-word;overflow-wrap:anywhere;background:#f6f7f7;border:1px solid #e2e4e7;border-radius:6px;padding:10px;}
             .beeclear-ilm-context-list-preview{margin:0;padding-left:18px;list-style:disc;}
             @media (max-width:782px){
-                .beeclear-ilm-overview{min-width:640px;}
+                .beeclear-ilm-overview{max-width:100%;}
                 .beeclear-ilm-overview th,.beeclear-ilm-overview td{white-space:normal;}
                 .beeclear-ilm-source-item{white-space:normal;}
             }
