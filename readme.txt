@@ -1,4 +1,4 @@
-=== Internal & External Link Manager ===
+m=== Internal & External Link Manager Premium ===
 Contributors: beeclear
 Donate link: https://beeclear.pl/
 Tags: internal linking, external links, autolink, seo, geo
