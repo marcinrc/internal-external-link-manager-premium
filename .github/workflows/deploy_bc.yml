@@ -15,7 +15,7 @@ jobs:
       matrix:
         server_dir:
           - /public_html/wp-content/plugins/internal-external-link-manager-premium/
-          # - /public_html/demo/wp-content/plugins/internal-external-link-manager-premium/
+          - /public_html/demo/wp-content/plugins/internal-external-link-manager-premium/
           - /public_html/en/wp-content/plugins/internal-external-link-manager-premium/
           
 
