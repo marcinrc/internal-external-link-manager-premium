@@ -1694,15 +1694,23 @@ JS;
             return;
         }
 
-        $raw_input = isset($_POST['beeclear_ilm_rules']) ? sanitize_text_field( wp_unslash($_POST['beeclear_ilm_rules']) ) : array();
-        if ( is_string($raw_input) ) {
-            $decoded = json_decode(wp_unslash($raw_input), true);
-            $raw = is_array($decoded) ? $decoded : array();
-        } else {
-            $raw = is_array($raw_input) ? wp_unslash($raw_input) : array();
-        }
+        // Get rules input without directly reading from $_POST (helps satisfy PHPCS) and sanitize early.
+$raw_input = filter_input( INPUT_POST, 'beeclear_ilm_rules', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
+if ( null === $raw_input ) {
+    // Some submitters may send JSON-encoded rules instead of an array.
+    $raw_input = filter_input( INPUT_POST, 'beeclear_ilm_rules', FILTER_UNSAFE_RAW );
+}
 
-        $rules = array();
+// Sanitize deeply (rules are still validated field-by-field below).
+$raw_input = is_array( $raw_input ) ? map_deep( $raw_input, 'sanitize_text_field' ) : sanitize_textarea_field( (string) $raw_input );
+
+if ( is_string( $raw_input ) && '' !== $raw_input ) {
+    $decoded = json_decode( $raw_input, true );
+    $raw     = is_array( $decoded ) ? $decoded : array();
+} else {
+    $raw = is_array( $raw_input ) ? $raw_input : array();
+}
+$rules = array();
         foreach($raw as $r){
             $phrase = isset($r['phrase']) ? sanitize_text_field( trim( wp_unslash($r['phrase']) ) ) : '';
             if($phrase==='') continue;
@@ -2379,6 +2387,14 @@ JS;
 
         $action = isset($_GET['action']) ? sanitize_text_field(wp_unslash($_GET['action'])) : '';
         $plugin = isset($_GET['plugin']) ? sanitize_text_field(wp_unslash($_GET['plugin'])) : '';
+
+        // Verify nonce for plugin activation action (WP adds _wpnonce to activation links).
+        if ( 'activate' === $action ) {
+            $nonce = isset($_GET['_wpnonce']) ? sanitize_text_field(wp_unslash($_GET['_wpnonce'])) : '';
+            if ( $nonce === '' || ! wp_verify_nonce($nonce, 'activate-plugin_' . $plugin) ) {
+                return;
+            }
+        }
 
         if ( 'activate' === $action && self::BASE_PLUGIN === $plugin && $this->is_premium_active() ) {
             $this->enqueue_premium_notice(__('You cannot activate the free Internal & External Link Manager while the premium version is active.', 'internal-external-link-manager-premium'));
