@@ -1859,8 +1859,12 @@ $rules = array();
         $this->start_overview_scan_now($pts, __('Auto scan started after save: %d pages queued.', 'internal-external-link-manager-premium'));
     }
 
-    private function rebuild_index(){
+    private function rebuild_index($log_message = ''){
         $this->last_rebuild_error = '';
+        if ($log_message === '') {
+            $log_message = __('Index rebuild triggered.', 'internal-external-link-manager-premium');
+        }
+        $this->log_activity($log_message);
         $settings = get_option(self::OPT_SETTINGS, array());
         $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
 
@@ -2821,12 +2825,11 @@ $rules = array();
         $scan_summary = $this->get_scan_summary();
 
         if ( isset($_POST['beeclear_ilm_reindex_now']) && check_admin_referer(self::NONCE, self::NONCE) ){
-            $index = $this->rebuild_index();
+            $index = $this->rebuild_index(__('Index rebuild triggered from dashboard.', 'internal-external-link-manager-premium'));
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
                 echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
-                $this->log_activity(__('Index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -2836,12 +2839,11 @@ $rules = array();
             update_option(self::OPT_EXTERNAL_MAP, array(), false);
             delete_option(self::OPT_OVERVIEW_SCAN_SUMMARY);
             delete_option(self::OPT_OVERVIEW_SCAN);
-            $this->rebuild_index();
+            $this->rebuild_index(__('Data cleared and index rebuild triggered from dashboard.', 'internal-external-link-manager-premium'));
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
                 echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
-                $this->log_activity(__('Data cleared and index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -2849,12 +2851,11 @@ $rules = array();
                         $this->purge_database();
                         delete_option(self::OPT_OVERVIEW_SCAN_SUMMARY);
                         delete_option(self::OPT_OVERVIEW_SCAN);
-                        $this->rebuild_index();
+                        $this->rebuild_index(__('Database purged and index rebuild triggered from dashboard.', 'internal-external-link-manager-premium'));
                         if ( $this->last_rebuild_error !== '' ) {
                             echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
                         } else {
                             echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
-                            $this->log_activity(__('Database purged and index rebuilt from dashboard.', 'internal-external-link-manager-premium'));
                         }
                 }
 
@@ -3802,12 +3803,11 @@ $rules = array();
         $this->rebuild_index();
 
         if ( isset($_POST['beeclear_ilm_reindex_now']) && check_admin_referer(self::NONCE, self::NONCE) ){
-            $index = $this->rebuild_index();
+            $index = $this->rebuild_index(__('Index rebuild triggered from overview.', 'internal-external-link-manager-premium'));
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
                 echo '<div class="notice notice-success"><p>'.esc_html__('Index rebuilt. Scan completed.', 'internal-external-link-manager-premium').'</p></div>';
-                $this->log_activity(__('Index rebuilt from overview.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -3817,12 +3817,11 @@ $rules = array();
             update_option(self::OPT_EXTERNAL_MAP, array(), false);
             delete_option(self::OPT_OVERVIEW_SCAN_SUMMARY);
             delete_option(self::OPT_OVERVIEW_SCAN);
-            $this->rebuild_index();
+            $this->rebuild_index(__('Data cleared and index rebuild triggered from overview.', 'internal-external-link-manager-premium'));
             if ( $this->last_rebuild_error !== '' ) {
                 echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
             } else {
                 echo '<div class="notice notice-success"><p>'.esc_html__('Data cleared and index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
-                $this->log_activity(__('Data cleared and index rebuilt from overview.', 'internal-external-link-manager-premium'));
             }
         }
 
@@ -3831,12 +3830,11 @@ $rules = array();
                         delete_option(self::OPT_OVERVIEW_SCAN_SUMMARY);
                         delete_option(self::OPT_OVERVIEW_SCAN);
                         update_option(self::OPT_EXTERNAL_MAP, array(), false);
-                        $this->rebuild_index();
+                        $this->rebuild_index(__('Database purged and index rebuild triggered from overview.', 'internal-external-link-manager-premium'));
                         if ( $this->last_rebuild_error !== '' ) {
                             echo '<div class="notice notice-error"><p>'.esc_html($this->last_rebuild_error).'</p></div>';
                         } else {
                             echo '<div class="notice notice-success"><p>'.esc_html__('Database purged. Index rebuilt.', 'internal-external-link-manager-premium').'</p></div>';
-                            $this->log_activity(__('Database purged and index rebuilt from overview.', 'internal-external-link-manager-premium'));
                         }
                 }
 
@@ -4132,11 +4130,10 @@ $rules = array();
                         }
                     }
                 }
-                $idx = $this->rebuild_index();
+                $idx = $this->rebuild_index(__('Import finished and index rebuild triggered.', 'internal-external-link-manager-premium'));
                 echo '<div class="notice notice-success"><p>'.esc_html__('Imported successfully and index rebuilt.', 'internal-external-link-manager-premium').'</p>';
                 echo wp_kses_post( $this->render_index_summary_html( $this->summarize_index($idx) ) );
                 echo '</div>';
-                $this->log_activity(__('Import finished and index rebuilt.', 'internal-external-link-manager-premium'));
             } else {
                 echo '<div class="notice notice-error"><p>'.esc_html__('Invalid JSON.', 'internal-external-link-manager-premium').'</p></div>';
             }
