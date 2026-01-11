@@ -84,6 +84,7 @@ class BeeClear_ILM {
         add_action('admin_menu', array($this, 'admin_menu'));
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), array($this,'settings_link'));
         add_action('admin_init', array($this, 'register_settings'));
+        add_action('update_option_' . self::OPT_SETTINGS, array($this, 'handle_settings_update'), 10, 3);
 
         add_action('add_meta_boxes', array($this, 'add_metabox'));
 
@@ -318,6 +319,22 @@ class BeeClear_ILM {
         $out['activity_log_limit'] = $log_limit_raw === '' ? '' : max(1, intval($log_limit_raw));
 
         return $out;
+    }
+
+    public function handle_settings_update($old_value, $value, $option){
+        if ( ! is_admin() ) return;
+        if ( ! current_user_can('manage_options') ) return;
+
+        $this->rebuild_index();
+        $this->log_activity(__('Index rebuilt after global settings save.', 'internal-external-link-manager-premium'));
+
+        if ( empty($value['auto_scan_on_save']) && empty($value['auto_scan_on_external']) ) {
+            return;
+        }
+
+        $pts = !empty($value['process_post_types']) ? (array) $value['process_post_types'] : array('post','page');
+        /* translators: %d: number of pages queued for the overview scan. */
+        $this->start_overview_scan_now($pts, __('Auto scan started after settings save: %d pages queued.', 'internal-external-link-manager-premium'));
     }
 
     private function sanitize_external_rules($raw_rules){
