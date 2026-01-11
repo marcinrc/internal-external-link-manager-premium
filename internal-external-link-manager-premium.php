@@ -2966,7 +2966,7 @@ $rules = array();
         echo '</div>';
 
         echo '<div class="beeclear-card">';
-        submit_button();
+        submit_button(esc_html__('Save and rebuild index', 'internal-external-link-manager-premium'));
         echo '</div>';
 
         echo '</form>';
@@ -3728,6 +3728,8 @@ $rules = array();
             wp_send_json_error(array('message' => __('Access denied.', 'internal-external-link-manager-premium')));
         }
 
+        $this->rebuild_index();
+
         $settings = get_option(self::OPT_SETTINGS, array());
         $pts = !empty($settings['process_post_types']) ? (array)$settings['process_post_types'] : array('post','page');
         $ids = $this->collect_overview_scan_ids($pts);
@@ -3875,6 +3877,7 @@ $rules = array();
             $raw_ext = isset($_POST['beeclear_ilm_ext']) ? wp_unslash( $_POST['beeclear_ilm_ext'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized in sanitize_external_rules().
             $clean = $this->sanitize_external_rules( is_array($raw_ext) ? $raw_ext : array() );
             update_option(self::OPT_EXT_RULES, $clean, false);
+            $this->rebuild_index();
             echo '<div class="notice notice-success"><p>'.esc_html__('External rules saved.', 'internal-external-link-manager-premium').'</p></div>';
 
             $settings = get_option(self::OPT_SETTINGS, array());
