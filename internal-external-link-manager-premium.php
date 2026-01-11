@@ -326,7 +326,6 @@ class BeeClear_ILM {
         if ( ! current_user_can('manage_options') ) return;
 
         $this->rebuild_index();
-        $this->log_activity(__('Index rebuilt after global settings save.', 'internal-external-link-manager-premium'));
 
         if ( empty($value['auto_scan_on_save']) && empty($value['auto_scan_on_external']) ) {
             return;
