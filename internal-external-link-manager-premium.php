@@ -1982,7 +1982,10 @@ $rules = array();
             $current_post_type = ($post instanceof WP_Post) ? $post->post_type : '';
             $current_id = ($post instanceof WP_Post) ? (int)$post->ID : 0;
 
+            $global_max_per_target = isset($settings['max_per_target']) ? (int)$settings['max_per_target'] : 1;
+
             $prepared_internal = array();
+            $prepared_internal_counts = array();
             foreach( (array)$internal as $rule ){
                 $phrase = isset($rule['phrase']) ? trim((string)$rule['phrase']) : '';
                 $target = isset($rule['target']) ? (int)$rule['target'] : 0;
@@ -1991,6 +1994,14 @@ $rules = array();
                 $rule_limit = null;
                 if (array_key_exists('max_per_target', $rule) && $rule['max_per_target'] !== null) {
                     $rule_limit = max(0, (int) $rule['max_per_target']);
+                }
+                $effective_limit = $rule_limit !== null ? $rule_limit : $global_max_per_target;
+                if ($effective_limit > 0) {
+                    $current_count = $prepared_internal_counts[$target] ?? 0;
+                    if ($current_count >= $effective_limit) {
+                        continue;
+                    }
+                    $prepared_internal_counts[$target] = $current_count + 1;
                 }
 
                 $context_patterns = array();
@@ -2080,7 +2091,6 @@ $rules = array();
                 libxml_clear_errors();
                 if ( ! $loaded ) return $content;
 
-                $global_max_per_target = isset($settings['max_per_target']) ? (int)$settings['max_per_target'] : 1;
                 $max_total            = isset($settings['max_total_per_page']) ? (int)$settings['max_total_per_page'] : 0;
 
                 $linked_counts_internal   = array();
